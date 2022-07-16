@@ -1,27 +1,16 @@
-# Quest Chains Mono Repo
+# @quest-chains/contracts
 
-## Available Scripts
+Try running some of the following tasks:
 
-In the project directory, you can run:
+```shell
+yarn compile
+yarn test
+yarn coverage
+```
 
-### Dapp
+#### Roles
 
-#### `yarn dapp:dev`
-
-#### `yarn dapp:build`
-
-#### `yarn dapp:start`
-
-### Contracts
-
-#### `yarn contracts:compile`
-
-#### `yarn contracts:test`
-
-#### `yarn contracts:deploy`
-
-### Subgraph
-
-#### `yarn subgraph:codegen`
-
-#### `yarn subgraph:build`
+- REVIEWER role is the most basic with ability to review quests
+- EDITOR has REVIEWER role and extra ability to add/remove/edit quests
+- ADMIN has EDITOR role and ability to add/remove EDITORs/REVIEWERs
+- OWNER has ADMIN role + ability to add/remove ADMINs/OWNERs

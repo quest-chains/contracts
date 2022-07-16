@@ -1,43 +1,27 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
 node_modules
-.pnp
-.pnp.js
+.env*
+
+# yarn 
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
+*.log
+package-lock.json
 
 # testing
 coverage
+lib-cov
+coverage.json
 
-# production
-build
+# typescript
+types
 dist
-.next
 
-# misc
-.DS_Store
-.env*
-
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# contracts
-packages/contracts/cache
-packages/contracts/types
-packages/contracts/artifacts
-packages/contracts/coverage*
-
-# subgraph
-packages/subgraph/build/
-packages/subgraph/src/types/
-packages/subgraph/subgraph.yaml
+# hardhat
+cache
+artifacts
 
 # vim
 *.sw[a-z]
-
-# yarn
-.yarn
-.yarnrc.yml
-.pnp.*
-package-lock.json
