@@ -1,7 +1,7 @@
 {
   "name": "@quest-chains/contracts",
   "version": "0.1.0",
-  "license": "MIT",
+  "license": "GPL-3.0",
   "scripts": {
     "clean": "hardhat clean",
     "compile": "hardhat compile",

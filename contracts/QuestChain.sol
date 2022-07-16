@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0
 // solhint-disable max-states-count
 
 pragma solidity ^0.8.11;
