@@ -247,12 +247,12 @@ contract QuestChain is
     }
 
     function reviewProof(
-        address[] calldata _questorList,
+        address[] calldata _questerList,
         uint256[] calldata _questIdList,
         bool[] calldata _successList,
         string[] calldata _detailsList
     ) external override onlyRole(REVIEWER_ROLE) {
-        uint256 _loopLength = _questorList.length;
+        uint256 _loopLength = _questerList.length;
 
         require(
             _loopLength == _questIdList.length &&
@@ -262,12 +262,12 @@ contract QuestChain is
         );
 
         for (uint256 i; i < _loopLength; i++) {
-            _reviewProof(_questorList[i], _questIdList[i], _successList[i]);
+            _reviewProof(_questerList[i], _questIdList[i], _successList[i]);
         }
 
         emit QuestProofReviewed(
             _msgSender(),
-            _questorList,
+            _questerList,
             _questIdList,
             _successList,
             _detailsList
@@ -314,15 +314,15 @@ contract QuestChain is
     }
 
     function _reviewProof(
-        address _questor,
+        address _quester,
         uint256 _questId,
         bool _success
     ) internal validQuest(_questId) {
         require(
-            _questStatus[_questor][_questId] == Status.review,
+            _questStatus[_quester][_questId] == Status.review,
             "QuestChain: quest not in review"
         );
 
-        _questStatus[_questor][_questId] = _success ? Status.pass : Status.fail;
+        _questStatus[_quester][_questId] = _success ? Status.pass : Status.fail;
     }
 }

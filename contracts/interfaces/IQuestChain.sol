@@ -80,7 +80,7 @@ interface IQuestChain {
     ) external;
 
     function reviewProof(
-        address[] calldata _questorList,
+        address[] calldata _questerList,
         uint256[] calldata _questIdList,
         bool[] calldata _successList,
         string[] calldata _detailsList
