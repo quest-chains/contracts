@@ -320,17 +320,17 @@ describe('QuestChain', () => {
 
   describe('createQuest', async () => {
     it('Should create a new quest', async () => {
-      const tx = await chain.createQuest(DETAILS_STRING);
+      const tx = await chain.createQuest([DETAILS_STRING]);
       await tx.wait();
 
       await expect(tx)
         .to.emit(chain, 'QuestCreated')
-        .withArgs(owner.address, 0, DETAILS_STRING);
+        .withArgs(owner.address, [0], [DETAILS_STRING]);
       expect(await chain.questCount()).to.equal(1);
     });
 
     it('Should revert create if not EDITOR', async () => {
-      const tx = chain.connect(signers[2]).createQuest(DETAILS_STRING);
+      const tx = chain.connect(signers[2]).createQuest([DETAILS_STRING]);
 
       await expect(tx).to.be.revertedWith(
         `AccessControl: account ${signers[2].address.toLowerCase()} is missing role ${EDITOR_ROLE}`,
@@ -338,18 +338,18 @@ describe('QuestChain', () => {
     });
 
     it('Should create if new EDITOR', async () => {
-      const tx = await chain.connect(signers[1]).createQuest(DETAILS_STRING);
+      const tx = await chain.connect(signers[1]).createQuest([DETAILS_STRING]);
       await tx.wait();
 
       await expect(tx)
         .to.emit(chain, 'QuestCreated')
-        .withArgs(signers[1].address, 1, DETAILS_STRING);
+        .withArgs(signers[1].address, [1], [DETAILS_STRING]);
       expect(await chain.questCount()).to.equal(2);
       await (
-        await chain.connect(signers[1]).createQuest(DETAILS_STRING)
+        await chain.connect(signers[1]).createQuest([DETAILS_STRING])
       ).wait();
       await (
-        await chain.connect(signers[1]).createQuest(DETAILS_STRING)
+        await chain.connect(signers[1]).createQuest([DETAILS_STRING])
       ).wait();
       expect(await chain.questCount()).to.equal(4);
     });
@@ -357,22 +357,22 @@ describe('QuestChain', () => {
 
   describe('editQuest', async () => {
     it('Should edit a new quest', async () => {
-      const tx = await chain.editQuest(0, DETAILS_STRING);
+      const tx = await chain.editQuest([0], [DETAILS_STRING]);
       await tx.wait();
 
       await expect(tx)
         .to.emit(chain, 'QuestEdited')
-        .withArgs(owner.address, 0, DETAILS_STRING);
+        .withArgs(owner.address, [0], [DETAILS_STRING]);
     });
 
     it('Should revert edit if invalid questId', async () => {
-      const tx = chain.editQuest(5, DETAILS_STRING);
+      const tx = chain.editQuest([5], [DETAILS_STRING]);
 
       await expect(tx).to.be.revertedWith('QuestChain: quest not found');
     });
 
     it('Should revert edit if not EDITOR', async () => {
-      const tx = chain.connect(signers[2]).editQuest(0, DETAILS_STRING);
+      const tx = chain.connect(signers[2]).editQuest([0], [DETAILS_STRING]);
 
       await expect(tx).to.be.revertedWith(
         `AccessControl: account ${signers[2].address.toLowerCase()} is missing role ${EDITOR_ROLE}`,
@@ -382,61 +382,63 @@ describe('QuestChain', () => {
     it('Should edit if new EDITOR', async () => {
       await (await chain.grantRole(EDITOR_ROLE, signers[2].address)).wait();
 
-      const tx = await chain.connect(signers[2]).editQuest(0, DETAILS_STRING);
+      const tx = await chain
+        .connect(signers[2])
+        .editQuest([0], [DETAILS_STRING]);
       await tx.wait();
 
       await expect(tx)
         .to.emit(chain, 'QuestEdited')
-        .withArgs(signers[2].address, 0, DETAILS_STRING);
+        .withArgs(signers[2].address, [0], [DETAILS_STRING]);
     });
   });
 
   describe('submitProof', async () => {
     it('Should submitProof for a quest', async () => {
-      const tx = await chain.submitProof(0, DETAILS_STRING);
+      const tx = await chain.submitProof([0], [DETAILS_STRING]);
       await tx.wait();
 
       await expect(tx)
         .to.emit(chain, 'QuestProofSubmitted')
-        .withArgs(owner.address, 0, DETAILS_STRING);
+        .withArgs(owner.address, [0], [DETAILS_STRING]);
     });
 
     it('Should revert submitProof if invalid questId', async () => {
-      const tx = chain.submitProof(5, DETAILS_STRING);
+      const tx = chain.submitProof([5], [DETAILS_STRING]);
 
       await expect(tx).to.be.revertedWith('QuestChain: quest not found');
     });
 
     it('Should submitProof event if already in review', async () => {
-      const tx = await chain.submitProof(0, DETAILS_STRING);
+      const tx = await chain.submitProof([0], [DETAILS_STRING]);
 
       await expect(tx)
         .to.emit(chain, 'QuestProofSubmitted')
-        .withArgs(owner.address, 0, DETAILS_STRING);
+        .withArgs(owner.address, [0], [DETAILS_STRING]);
     });
 
     it('Should revert submitProof if already accepted', async () => {
       await (
-        await chain.reviewProof(owner.address, 0, true, DETAILS_STRING)
+        await chain.reviewProof([owner.address], [0], [true], [DETAILS_STRING])
       ).wait();
 
-      const tx = chain.submitProof(0, DETAILS_STRING);
+      const tx = chain.submitProof([0], [DETAILS_STRING]);
 
       await expect(tx).to.be.revertedWith('QuestChain: already passed');
     });
 
     it('Should submitProof for a quest if already failed', async () => {
-      await (await chain.submitProof(1, DETAILS_STRING)).wait();
+      await (await chain.submitProof([1], [DETAILS_STRING])).wait();
       await (
-        await chain.reviewProof(owner.address, 1, false, DETAILS_STRING)
+        await chain.reviewProof([owner.address], [1], [false], [DETAILS_STRING])
       ).wait();
 
       const NEW_DETAILS_STRING = 'ipfs://new-details-1';
-      const tx = await chain.submitProof(1, NEW_DETAILS_STRING);
+      const tx = await chain.submitProof([1], [NEW_DETAILS_STRING]);
       await tx.wait();
       await expect(tx)
         .to.emit(chain, 'QuestProofSubmitted')
-        .withArgs(owner.address, 1, NEW_DETAILS_STRING);
+        .withArgs(owner.address, [1], [NEW_DETAILS_STRING]);
     });
   });
 
@@ -446,20 +448,27 @@ describe('QuestChain', () => {
         Status.init,
       );
       await (
-        await chain.connect(signers[1]).submitProof(0, DETAILS_STRING)
+        await chain.connect(signers[1]).submitProof([0], [DETAILS_STRING])
       ).wait();
 
       const tx = await chain.reviewProof(
-        signers[1].address,
-        0,
-        true,
-        DETAILS_STRING,
+        [signers[1].address],
+        [0],
+        [true],
+        [DETAILS_STRING],
       );
       await tx.wait();
 
       await expect(tx)
         .to.emit(chain, 'QuestProofReviewed')
-        .withArgs(owner.address, signers[1].address, 0, true, DETAILS_STRING);
+        .withArgs(
+          owner.address,
+          [signers[1].address],
+          [0],
+          [true],
+          [DETAILS_STRING],
+        );
+
       expect(await chain.questStatus(signers[1].address, 0)).to.be.equal(
         Status.pass,
       );
@@ -470,44 +479,60 @@ describe('QuestChain', () => {
         Status.init,
       );
       await (
-        await chain.connect(signers[1]).submitProof(1, DETAILS_STRING)
+        await chain.connect(signers[1]).submitProof([1], [DETAILS_STRING])
       ).wait();
 
       const tx = await chain.reviewProof(
-        signers[1].address,
-        1,
-        false,
-        DETAILS_STRING,
+        [signers[1].address],
+        [1],
+        [false],
+        [DETAILS_STRING],
       );
       await tx.wait();
 
       await expect(tx)
         .to.emit(chain, 'QuestProofReviewed')
-        .withArgs(owner.address, signers[1].address, 1, false, DETAILS_STRING);
+        .withArgs(
+          owner.address,
+          [signers[1].address],
+          [1],
+          [false],
+          [DETAILS_STRING],
+        );
       expect(await chain.questStatus(signers[1].address, 1)).to.be.equal(
         Status.fail,
       );
     });
 
     it('Should revert reviewProof if invalid questId', async () => {
-      const tx = chain.reviewProof(owner.address, 5, true, DETAILS_STRING);
+      const tx = chain.reviewProof(
+        [owner.address],
+        [5],
+        [true],
+        [DETAILS_STRING],
+      );
 
       await expect(tx).to.be.revertedWith('QuestChain: quest not found');
     });
 
     it('Should revert reviewProof if quest not in review', async () => {
-      const tx = chain.reviewProof(owner.address, 3, true, DETAILS_STRING);
+      const tx = chain.reviewProof(
+        [owner.address],
+        [3],
+        [true],
+        [DETAILS_STRING],
+      );
 
       await expect(tx).to.be.revertedWith('QuestChain: quest not in review');
     });
 
     it('Should revert reviewProof if not REVIEWER', async () => {
       await (
-        await chain.connect(signers[1]).submitProof(3, DETAILS_STRING)
+        await chain.connect(signers[1]).submitProof([3], [DETAILS_STRING])
       ).wait();
       const tx = chain
         .connect(signers[3])
-        .reviewProof(signers[1].address, 3, true, DETAILS_STRING);
+        .reviewProof([signers[1].address], [3], [true], [DETAILS_STRING]);
 
       await expect(tx).to.be.revertedWith(
         `AccessControl: account ${signers[3].address.toLowerCase()} is missing role ${REVIEWER_ROLE}`,
@@ -517,17 +542,17 @@ describe('QuestChain', () => {
     it('Should reviewProof if new REVIEWER', async () => {
       const tx = await chain
         .connect(signers[2])
-        .reviewProof(signers[1].address, 3, false, DETAILS_STRING);
+        .reviewProof([signers[1].address], [3], [false], [DETAILS_STRING]);
       await tx.wait();
 
       await expect(tx)
         .to.emit(chain, 'QuestProofReviewed')
         .withArgs(
           signers[2].address,
-          signers[1].address,
-          3,
-          false,
-          DETAILS_STRING,
+          [signers[1].address],
+          [3],
+          [false],
+          [DETAILS_STRING],
         );
       expect(await chain.questStatus(signers[1].address, 3)).to.be.equal(
         Status.fail,
@@ -541,7 +566,7 @@ describe('QuestChain', () => {
         Status.init,
       );
       await (
-        await chain.connect(signers[2]).submitProof(0, DETAILS_STRING)
+        await chain.connect(signers[2]).submitProof([0], [DETAILS_STRING])
       ).wait();
 
       expect(await chain.questStatus(signers[2].address, 0)).to.be.equal(
@@ -555,7 +580,12 @@ describe('QuestChain', () => {
       );
 
       await (
-        await chain.reviewProof(signers[2].address, 0, true, DETAILS_STRING)
+        await chain.reviewProof(
+          [signers[2].address],
+          [0],
+          [true],
+          [DETAILS_STRING],
+        )
       ).wait();
 
       expect(await chain.questStatus(signers[2].address, 0)).to.be.equal(
@@ -568,7 +598,7 @@ describe('QuestChain', () => {
         Status.init,
       );
       await (
-        await chain.connect(signers[2]).submitProof(1, DETAILS_STRING)
+        await chain.connect(signers[2]).submitProof([1], [DETAILS_STRING])
       ).wait();
 
       expect(await chain.questStatus(signers[2].address, 1)).to.be.equal(
@@ -576,7 +606,12 @@ describe('QuestChain', () => {
       );
 
       await (
-        await chain.reviewProof(signers[2].address, 1, false, DETAILS_STRING)
+        await chain.reviewProof(
+          [signers[2].address],
+          [1],
+          [false],
+          [DETAILS_STRING],
+        )
       ).wait();
 
       expect(await chain.questStatus(signers[2].address, 1)).to.be.equal(
