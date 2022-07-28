@@ -9,25 +9,25 @@ interface IQuestChain {
     event QuestChainEdited(address indexed editor, string details);
     event QuestCreated(
         address indexed creator,
-        uint256 indexed questId,
-        string details
+        uint256[] questIdList,
+        string[] detailsList
     );
     event QuestEdited(
         address indexed editor,
-        uint256 indexed questId,
-        string details
+        uint256[] questIdList,
+        string[] detailsList
     );
     event QuestProofSubmitted(
         address indexed quester,
-        uint256 indexed questId,
-        string proof
+        uint256[] questIdList,
+        string[] proofList
     );
     event QuestProofReviewed(
         address indexed reviewer,
-        address indexed quester,
-        uint256 indexed questId,
-        bool success,
-        string details
+        address[] questerList,
+        uint256[] questIdList,
+        bool[] successList,
+        string[] detailsList
     );
     event QuestPaused(address indexed editor, uint256 indexed questId);
     event QuestUnpaused(address indexed editor, uint256 indexed questId);
@@ -67,17 +67,23 @@ interface IQuestChain {
 
     function edit(string calldata _details) external;
 
-    function createQuest(string calldata _details) external;
+    function createQuest(string[] calldata _detailsList) external;
 
-    function editQuest(uint256 _questId, string calldata _details) external;
+    function editQuest(
+        uint256[] calldata _questIdList,
+        string[] calldata _detailsList
+    ) external;
 
-    function submitProof(uint256 _questId, string calldata _proof) external;
+    function submitProof(
+        uint256[] calldata _questIdList,
+        string[] calldata _proofList
+    ) external;
 
     function reviewProof(
-        address _quester,
-        uint256 _questId,
-        bool _success,
-        string calldata _details
+        address[] calldata _questorList,
+        uint256[] calldata _questIdList,
+        bool[] calldata _successList,
+        string[] calldata _detailsList
     ) external;
 
     function questStatus(address _quester, uint256 _questId)
