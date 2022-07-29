@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity ^0.8.11;
+pragma solidity 0.8.15;
 
 import "./IQuestChainToken.sol";
 
@@ -49,12 +49,6 @@ interface IQuestChain {
     function init(
         address _owner,
         string calldata _details,
-        string memory _tokenURI
-    ) external;
-
-    function initWithRoles(
-        address _owner,
-        string calldata _details,
         string memory _tokenURI,
         address[] calldata _admins,
         address[] calldata _editors,
@@ -85,7 +79,9 @@ interface IQuestChain {
         view
         returns (Status);
 
-    function mintToken(address _quester) external;
+    function mintToken() external;
 
-    function burnToken(address _quester) external;
+    function burnToken() external;
+
+    function upgrade() external;
 }

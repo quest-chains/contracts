@@ -24,7 +24,7 @@ task('accounts', 'Prints the list of accounts', async (_args, hre) => {
 // Go to https://hardhat.org/config/ to learn more
 
 const config: HardhatUserConfig = {
-  solidity: '0.8.13',
+  solidity: '0.8.15',
   networks: {
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${process.env.INFURA_ID}`,

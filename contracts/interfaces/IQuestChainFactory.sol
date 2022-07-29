@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.15;
 
 interface IQuestChainFactory {
-    event QuestChainCreated(uint256 indexed index, address questChain);
-    event QuestChainImplUpdated(
-        address indexed oldImpl,
-        address indexed newImpl
-    );
+    event FactoryInit();
+    event QuestChainCreated(uint256 index, address questChain);
+    event AdminReplaced(address admin);
+    event ImplReplaced(address impl);
+    event TreasuryReplaced(address treasury);
+    event PaymentTokenReplaced(address paymentToken);
+    event UpgradeFeeReplaced(uint256 upgradeFee);
+    event QuestChainUpgraded(address questChain, address sender, uint256 cost);
 
     function questChainCount() external view returns (uint256);
 
@@ -15,25 +18,15 @@ interface IQuestChainFactory {
 
     function questChainToken() external view returns (address);
 
-    function create(string calldata _details, string memory _tokenURI)
-        external
-        returns (address);
+    function admin() external view returns (address);
 
-    function createWithRoles(
-        string calldata _details,
-        string memory _tokenURI,
-        address[] calldata _admins,
-        address[] calldata _editors,
-        address[] calldata _reviewers
-    ) external returns (address);
+    function treasury() external view returns (address);
 
-    function createDeterministic(
-        string calldata _details,
-        string memory _tokenURI,
-        bytes32 _salt
-    ) external returns (address);
+    function paymentToken() external view returns (address);
 
-    function createDeterministicWithRoles(
+    function upgradeFee() external view returns (uint256);
+
+    function create(
         string calldata _details,
         string memory _tokenURI,
         address[] calldata _admins,
@@ -42,12 +35,20 @@ interface IQuestChainFactory {
         bytes32 _salt
     ) external returns (address);
 
-    function predictDeterministicAddress(bytes32 _salt)
-        external
-        returns (address);
+    function predictAddress(bytes32 _salt) external returns (address);
 
     function getQuestChainAddress(uint256 _index)
         external
         view
         returns (address);
+
+    function upgradeQuestChain(address _questChainAddress) external;
+
+    function upgradeQuestChainWithPermit(
+        address _questChainAddress,
+        uint256 deadline,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
+    ) external;
 }
