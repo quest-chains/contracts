@@ -7,7 +7,7 @@
 # $2 - New HEAD
 # $3 - 1 if checking out a branch, 0 if checking out something else, such as a file (rollbacks)
 
-if ! command -v yarn &> /dev/null; then
+if ! command -v yarn > /dev/null 2>&1; then
   exit 0
 fi
 
