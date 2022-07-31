@@ -28,6 +28,15 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
     address public paymentToken;
     uint256 public upgradeFee;
 
+    struct QuestChainInfo {
+        address chainAddress;
+        string details;
+        string tokenURI;
+        address[3][] members;
+        string[] quests;
+        bool paused;
+    }
+
     modifier onlyAdmin() {
         require(admin == msg.sender, "QuestChainFactory: not admin");
         _;
@@ -124,61 +133,32 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
         emit UpgradeFeeReplaced(_upgradeFee);
     }
 
-    function _setupQuestChain(
-        address _questChainAddress,
-        string calldata _details,
-        string memory _tokenURI,
-        address[] calldata _admins,
-        address[] calldata _editors,
-        address[] calldata _reviewers
-    ) internal {
-        IQuestChainToken(questChainToken).setTokenOwner(
-            questChainCount,
-            _questChainAddress
-        );
-
-        IQuestChain(_questChainAddress).init(
-            msg.sender,
-            _details,
-            _tokenURI,
-            _admins,
-            _editors,
-            _reviewers
-        );
-
-        _questChains[questChainCount] = _questChainAddress;
-        emit QuestChainCreated(questChainCount, _questChainAddress);
-
-        questChainCount++;
-    }
-
     function predictAddress(bytes32 _salt) external view returns (address) {
         return Clones.predictDeterministicAddress(questChainImpl, _salt);
     }
 
     function create(
         string calldata _details,
-        string memory _tokenURI,
-        address[] calldata _admins,
-        address[] calldata _editors,
-        address[] calldata _reviewers,
+        string calldata _tokenURI,
+        address[3][] calldata _members,
+        string[] calldata _quests,
+        bool _paused,
         bytes32 _salt
     ) external returns (address) {
-        address questChainAddress = Clones.cloneDeterministic(
-            questChainImpl,
-            _salt
-        );
+        QuestChainInfo memory info;
 
-        _setupQuestChain(
-            questChainAddress,
-            _details,
-            _tokenURI,
-            _admins,
-            _editors,
-            _reviewers
-        );
+        {
+            info.chainAddress = _newClone(_salt);
+            info.details = _details;
+            info.tokenURI = _tokenURI;
+            info.members = _members;
+            info.quests = _quests;
+            info.paused = _paused;
+        }
 
-        return questChainAddress;
+        _setupQuestChain(info);
+
+        return info.chainAddress;
     }
 
     function getQuestChainAddress(uint256 _index)
@@ -187,12 +167,6 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
         returns (address)
     {
         return _questChains[_index];
-    }
-
-    function _upgradeQuestChain(address _questChainAddress) internal {
-        IERC20(paymentToken).safeTransferFrom(msg.sender, treasury, upgradeFee);
-        IQuestChain(_questChainAddress).upgrade();
-        emit QuestChainUpgraded(_questChainAddress, msg.sender, upgradeFee);
     }
 
     function upgradeQuestChain(address _questChainAddress)
@@ -204,20 +178,70 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
 
     function upgradeQuestChainWithPermit(
         address _questChainAddress,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        uint256 _deadline,
+        bytes memory _signature
     ) external nonReentrant {
+        (uint8 v, bytes32 r, bytes32 s) = _recoverParameters(_signature);
         IERC20Permit(paymentToken).safePermit(
             msg.sender,
             address(this),
             upgradeFee,
-            deadline,
+            _deadline,
             v,
             r,
             s
         );
         _upgradeQuestChain(_questChainAddress);
+    }
+
+    function _newClone(bytes32 _salt) internal returns (address) {
+        return Clones.cloneDeterministic(questChainImpl, _salt);
+    }
+
+    function _setupQuestChain(QuestChainInfo memory _info) internal {
+        IQuestChainToken(questChainToken).setTokenOwner(
+            questChainCount,
+            _info.chainAddress
+        );
+
+        IQuestChain(_info.chainAddress).init(
+            msg.sender,
+            _info.details,
+            _info.tokenURI,
+            _info.members,
+            _info.quests,
+            _info.paused
+        );
+
+        _questChains[questChainCount] = _info.chainAddress;
+        emit QuestChainCreated(questChainCount, _info.chainAddress);
+
+        questChainCount++;
+    }
+
+    function _upgradeQuestChain(address _questChainAddress) internal {
+        IERC20(paymentToken).safeTransferFrom(msg.sender, treasury, upgradeFee);
+        IQuestChain(_questChainAddress).upgrade();
+        emit QuestChainUpgraded(_questChainAddress, msg.sender, upgradeFee);
+    }
+
+    function _recoverParameters(bytes memory _signature)
+        internal
+        pure
+        returns (
+            uint8 v,
+            bytes32 r,
+            bytes32 s
+        )
+    {
+        require(
+            _signature.length == 65,
+            "QuestChainFactory: invalid signature"
+        );
+        assembly {
+            r := mload(add(_signature, 0x20))
+            s := mload(add(_signature, 0x40))
+            v := byte(0, mload(add(_signature, 0x60)))
+        }
     }
 }

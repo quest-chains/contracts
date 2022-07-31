@@ -53,44 +53,58 @@ contract QuestChain is
         return IQuestChainToken(questChainFactory.questChainToken());
     }
 
-    function init(
-        address _owner,
-        string calldata _details,
-        string memory _tokenURI,
-        address[] calldata _admins,
-        address[] calldata _editors,
-        address[] calldata _reviewers
-    ) external initializer {
+    function _setupConstants() internal {
         questChainFactory = IQuestChainFactory(_msgSender());
         questChainId = questChainFactory.questChainCount();
 
         _setRoleAdmin(ADMIN_ROLE, OWNER_ROLE);
         _setRoleAdmin(EDITOR_ROLE, ADMIN_ROLE);
         _setRoleAdmin(REVIEWER_ROLE, ADMIN_ROLE);
+    }
 
+    function _setupRoles(
+        address _owner,
+        address[3][] calldata _members
+    ) internal {
         _grantRole(OWNER_ROLE, _owner);
         _grantRole(ADMIN_ROLE, _owner);
         _grantRole(EDITOR_ROLE, _owner);
         _grantRole(REVIEWER_ROLE, _owner);
 
+
+        for (uint256 i = 0; i < _members[0].length; i = i + 1) {
+            _grantRole(ADMIN_ROLE, _members[0][i]);
+            _grantRole(EDITOR_ROLE, _members[0][i]);
+            _grantRole(REVIEWER_ROLE, _members[0][i]);
+        }
+
+        for (uint256 i = 0; i < _members[1].length; i = i + 1) {
+            _grantRole(EDITOR_ROLE, _members[1][i]);
+            _grantRole(REVIEWER_ROLE, _members[1][i]);
+        }
+
+        for (uint256 i = 0; i < _members[2].length; i = i + 1) {
+            _grantRole(REVIEWER_ROLE, _members[2][i]);
+        }
+    }
+
+    function init(
+        address _owner,
+        string calldata _details,
+        string memory _tokenURI,
+        address[3][] calldata _members,
+        string[] calldata _quests,
+        bool _paused
+    ) external initializer {
+        _setupConstants();
         _setTokenURI(_tokenURI);
+        _setupRoles(_owner, _members);
 
-        for (uint256 i = 0; i < _admins.length; i = i + 1) {
-            _grantRole(ADMIN_ROLE, _admins[i]);
-            _grantRole(EDITOR_ROLE, _admins[i]);
-            _grantRole(REVIEWER_ROLE, _admins[i]);
+        questCount = questCount + _quests.length;
+        if (_paused) {
+            _pause();
         }
-
-        for (uint256 i = 0; i < _editors.length; i = i + 1) {
-            _grantRole(EDITOR_ROLE, _editors[i]);
-            _grantRole(REVIEWER_ROLE, _editors[i]);
-        }
-
-        for (uint256 i = 0; i < _reviewers.length; i = i + 1) {
-            _grantRole(REVIEWER_ROLE, _reviewers[i]);
-        }
-
-        emit QuestChainCreated(_owner, _details);
+        emit QuestChainInit(_owner, _details, _quests, _paused);
     }
 
     function grantRole(bytes32 role, address account)

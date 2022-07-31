@@ -5,7 +5,12 @@ pragma solidity 0.8.15;
 import "./IQuestChainToken.sol";
 
 interface IQuestChain {
-    event QuestChainCreated(address indexed creator, string details);
+    event QuestChainInit(
+        address indexed creator,
+        string details,
+        string[] quests,
+        bool paused
+    );
     event QuestChainEdited(address indexed editor, string details);
     event QuestCreated(
         address indexed creator,
@@ -50,9 +55,9 @@ interface IQuestChain {
         address _owner,
         string calldata _details,
         string memory _tokenURI,
-        address[] calldata _admins,
-        address[] calldata _editors,
-        address[] calldata _reviewers
+        address[3][] calldata _members,
+        string[] calldata _quests,
+        bool _paused
     ) external;
 
     function setTokenURI(string memory _tokenURI) external;

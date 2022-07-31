@@ -29,9 +29,9 @@ interface IQuestChainFactory {
     function create(
         string calldata _details,
         string memory _tokenURI,
-        address[] calldata _admins,
-        address[] calldata _editors,
-        address[] calldata _reviewers,
+        address[3][] calldata _members,
+        string[] calldata _quests,
+        bool _paused,
         bytes32 _salt
     ) external returns (address);
 
@@ -46,9 +46,7 @@ interface IQuestChainFactory {
 
     function upgradeQuestChainWithPermit(
         address _questChainAddress,
-        uint256 deadline,
-        uint8 v,
-        bytes32 r,
-        bytes32 s
+        uint256 _deadline,
+        bytes memory _signature
     ) external;
 }
