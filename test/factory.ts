@@ -1,13 +1,17 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
-import { ethers } from 'hardhat';
+import { MockContract } from 'ethereum-waffle';
+import { ethers, waffle } from 'hardhat';
 
-import { QuestChain, QuestChainFactory } from '../types';
-import { awaitQuestChainAddress, deploy, getContractAt } from './utils/helpers';
+import { IERC20__factory, QuestChain, QuestChainFactory } from '../types';
+import {
+  awaitQuestChainAddress,
+  deploy,
+  getContractAt,
+  numberToBytes32,
+} from './utils/helpers';
 
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
-const ZERO_BYTES32 =
-  '0x0000000000000000000000000000000000000000000000000000000000000000';
+const { deployMockContract } = waffle;
 const DETAILS_STRING = 'ipfs://details';
 const URI_STRING = 'ipfs://uri';
 
@@ -20,11 +24,14 @@ describe('QuestChainFactory', () => {
   let ADMIN_ROLE: string;
   let EDITOR_ROLE: string;
   let REVIEWER_ROLE: string;
-  let owner: string;
+  let admin: string;
+  let mockToken: MockContract;
 
   before(async () => {
     signers = await ethers.getSigners();
-    owner = signers[0].address;
+    admin = signers[0].address;
+
+    mockToken = await deployMockContract(signers[0], IERC20__factory.abi);
 
     questChainImpl = await deploy<QuestChain>('QuestChain', {});
 
@@ -35,63 +42,77 @@ describe('QuestChainFactory', () => {
       questChainImpl.REVIEWER_ROLE(),
     ]);
 
-    const QuestChainFactoryFactory = await ethers.getContractFactory(
+    chainFactory = await deploy<QuestChainFactory>(
       'QuestChainFactory',
+      {},
+      questChainImpl.address,
+      admin,
+      mockToken.address,
+      10,
     );
 
-    chainFactory = (await QuestChainFactoryFactory.deploy(
-      questChainImpl.address,
-    )) as QuestChainFactory;
+    await expect(chainFactory.deployTransaction).to.emit(
+      chainFactory,
+      'FactoryInit',
+    );
 
-    await chainFactory.deployed();
-
-    await expect(chainFactory.deployTransaction)
-      .to.emit(chainFactory, 'QuestChainImplUpdated')
-      .withArgs(ZERO_ADDRESS, questChainImpl.address);
-
-    expect(OWNER_ROLE).to.equal(ZERO_BYTES32);
+    expect(OWNER_ROLE).to.equal(numberToBytes32(0));
   });
 
   it('Should be initialized properly', async () => {
     expect(await chainFactory.questChainCount()).to.equal(0);
-    expect(await chainFactory.owner()).to.equal(owner);
+    expect(await chainFactory.admin()).to.equal(admin);
     expect(await chainFactory.questChainImpl()).to.equal(
       questChainImpl.address,
     );
   });
 
   it('Should revert change questChainImpl if zero address', async () => {
-    const tx = chainFactory.updateChainImpl(ZERO_ADDRESS);
-    await expect(tx).to.revertedWith('QuestChainFactory: invalid impl');
+    const tx = chainFactory.replaceChainImpl(ethers.constants.AddressZero);
+    await expect(tx).to.revertedWith('QuestChainFactory: 0 address');
   });
 
-  it('Should revert change questChainImpl if not owner', async () => {
+  it('Should revert change questChainImpl if not admin', async () => {
     const newQuestChain = await deploy<QuestChain>('QuestChain', {});
     const tx = chainFactory
       .connect(signers[1])
-      .updateChainImpl(newQuestChain.address);
-    await expect(tx).to.revertedWith('Ownable: caller is not the owner');
+      .replaceChainImpl(newQuestChain.address);
+    await expect(tx).to.revertedWith('QuestChainFactory: not admin');
   });
 
   it('Should change questChainImpl', async () => {
     const newQuestChain = await deploy<QuestChain>('QuestChain', {});
-    const tx = await chainFactory.updateChainImpl(newQuestChain.address);
+    const tx = await chainFactory.replaceChainImpl(newQuestChain.address);
     await tx.wait();
     await expect(tx)
-      .to.emit(chainFactory, 'QuestChainImplUpdated')
-      .withArgs(questChainImpl.address, newQuestChain.address);
+      .to.emit(chainFactory, 'ImplReplaced')
+      .withArgs(newQuestChain.address);
     expect(await chainFactory.questChainImpl()).to.equal(newQuestChain.address);
   });
 
   it('Should revert init for questChainImpl', async () => {
-    const tx = questChainImpl.init(owner, DETAILS_STRING, URI_STRING);
+    const tx = questChainImpl.init(
+      admin,
+      DETAILS_STRING,
+      URI_STRING,
+      [],
+      [],
+      [],
+    );
     await expect(tx).to.revertedWith(
       'Initializable: contract is already initialized',
     );
   });
 
   it('Should deploy a QuestChain', async () => {
-    const tx = await chainFactory.create(DETAILS_STRING, URI_STRING);
+    const tx = await chainFactory.create(
+      DETAILS_STRING,
+      URI_STRING,
+      [],
+      [],
+      [],
+      numberToBytes32(0),
+    );
     chainAddress = await awaitQuestChainAddress(await tx.wait());
     await expect(tx)
       .to.emit(chainFactory, 'QuestChainCreated')
@@ -100,12 +121,12 @@ describe('QuestChainFactory', () => {
     const chain = await getContractAt<QuestChain>('QuestChain', chainAddress);
     await expect(tx)
       .to.emit(chain, 'QuestChainCreated')
-      .withArgs(owner, DETAILS_STRING);
+      .withArgs(admin, DETAILS_STRING);
 
-    expect(await chain.hasRole(OWNER_ROLE, owner)).to.equal(true);
-    expect(await chain.hasRole(ADMIN_ROLE, owner)).to.equal(true);
-    expect(await chain.hasRole(EDITOR_ROLE, owner)).to.equal(true);
-    expect(await chain.hasRole(REVIEWER_ROLE, owner)).to.equal(true);
+    expect(await chain.hasRole(OWNER_ROLE, admin)).to.equal(true);
+    expect(await chain.hasRole(ADMIN_ROLE, admin)).to.equal(true);
+    expect(await chain.hasRole(EDITOR_ROLE, admin)).to.equal(true);
+    expect(await chain.hasRole(REVIEWER_ROLE, admin)).to.equal(true);
 
     expect(await chain.getRoleAdmin(OWNER_ROLE)).to.equal(OWNER_ROLE);
     expect(await chain.getRoleAdmin(ADMIN_ROLE)).to.equal(OWNER_ROLE);
@@ -119,12 +140,13 @@ describe('QuestChainFactory', () => {
     const admins = [signers[1].address, signers[2].address];
     const editors = [signers[2].address, signers[3].address];
     const reviewers = [signers[3].address, signers[4].address];
-    const tx = await chainFactory.createWithRoles(
+    const tx = await chainFactory.create(
       DETAILS_STRING,
       URI_STRING,
       admins,
       editors,
       reviewers,
+      numberToBytes32(1),
     );
     chainAddress = await awaitQuestChainAddress(await tx.wait());
     await expect(tx)
@@ -134,7 +156,7 @@ describe('QuestChainFactory', () => {
     const chain = await getContractAt<QuestChain>('QuestChain', chainAddress);
     await expect(tx)
       .to.emit(chain, 'QuestChainCreated')
-      .withArgs(owner, DETAILS_STRING);
+      .withArgs(admin, DETAILS_STRING);
 
     await Promise.all(
       admins.map(async admin =>
@@ -171,16 +193,19 @@ describe('QuestChainFactory', () => {
   });
 
   it('Should predict QuestChain address', async () => {
-    owner = signers[0].address;
+    admin = signers[0].address;
 
-    const predictedAddress = await chainFactory.predictDeterministicAddress(
-      ZERO_BYTES32,
+    const predictedAddress = await chainFactory.predictAddress(
+      numberToBytes32(2),
     );
 
-    const tx = await chainFactory.createDeterministic(
+    const tx = await chainFactory.create(
       DETAILS_STRING,
       URI_STRING,
-      ZERO_BYTES32,
+      [],
+      [],
+      [],
+      numberToBytes32(2),
     );
 
     chainAddress = await awaitQuestChainAddress(await tx.wait());
@@ -194,10 +219,24 @@ describe('QuestChainFactory', () => {
 
   it('Should update questChainCount', async () => {
     expect(await chainFactory.questChainCount()).to.equal(3);
-    let tx = await chainFactory.create(DETAILS_STRING, URI_STRING);
+    let tx = await chainFactory.create(
+      DETAILS_STRING,
+      URI_STRING,
+      [],
+      [],
+      [],
+      numberToBytes32(3),
+    );
     const chain0 = await awaitQuestChainAddress(await tx.wait());
     expect(await chainFactory.questChainCount()).to.equal(4);
-    tx = await chainFactory.create(DETAILS_STRING, URI_STRING);
+    tx = await chainFactory.create(
+      DETAILS_STRING,
+      URI_STRING,
+      [],
+      [],
+      [],
+      numberToBytes32(4),
+    );
     const chain1 = await awaitQuestChainAddress(await tx.wait());
     expect(await chainFactory.questChainCount()).to.equal(5);
 

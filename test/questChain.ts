@@ -1,15 +1,18 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
-import { ethers } from 'hardhat';
+import { MockContract } from 'ethereum-waffle';
+import { ethers, waffle } from 'hardhat';
 
-import { QuestChain, QuestChainFactory } from '../types';
+import { IERC20__factory, QuestChain, QuestChainFactory } from '../types';
 import {
   awaitQuestChainAddress,
   deploy,
   getContractAt,
+  numberToBytes32,
   Status,
 } from './utils/helpers';
 
+const { deployMockContract } = waffle;
 const DETAILS_STRING = 'ipfs://details';
 const URI_STRING = 'ipfs://uri';
 
@@ -23,9 +26,13 @@ describe('QuestChain', () => {
   let EDITOR_ROLE: string;
   let REVIEWER_ROLE: string;
   let owner: SignerWithAddress;
+  let mockToken: MockContract;
 
   before(async () => {
     signers = await ethers.getSigners();
+    owner = signers[0];
+
+    mockToken = await deployMockContract(signers[0], IERC20__factory.abi);
 
     const questChainImpl = await deploy<QuestChain>('QuestChain', {});
 
@@ -36,24 +43,26 @@ describe('QuestChain', () => {
       questChainImpl.REVIEWER_ROLE(),
     ]);
 
-    const QuestChainFactoryFactory = await ethers.getContractFactory(
+    chainFactory = await deploy<QuestChainFactory>(
       'QuestChainFactory',
+      {},
+      questChainImpl.address,
+      signers[0].address,
+      mockToken.address,
+      10,
     );
 
-    chainFactory = (await QuestChainFactoryFactory.deploy(
-      questChainImpl.address,
-    )) as QuestChainFactory;
-
-    await chainFactory.deployed();
-
-    const tx = await chainFactory.create(DETAILS_STRING, URI_STRING);
+    const tx = await chainFactory.create(
+      DETAILS_STRING,
+      URI_STRING,
+      [],
+      [],
+      [],
+      numberToBytes32(0),
+    );
     chainAddress = await awaitQuestChainAddress(await tx.wait());
-    await expect(tx)
-      .to.emit(chainFactory, 'QuestChainCreated')
-      .withArgs(0, chainAddress);
 
     chain = await getContractAt<QuestChain>('QuestChain', chainAddress);
-    owner = signers[0];
 
     await expect(tx)
       .to.emit(chain, 'QuestChainCreated')
