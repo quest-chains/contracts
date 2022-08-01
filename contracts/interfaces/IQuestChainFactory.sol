@@ -2,6 +2,8 @@
 
 pragma solidity 0.8.15;
 
+import "../libraries/QuestChainCommons.sol";
+
 interface IQuestChainFactory {
     event FactoryInit();
     event QuestChainCreated(uint256 index, address questChain);
@@ -27,12 +29,20 @@ interface IQuestChainFactory {
     function upgradeFee() external view returns (uint256);
 
     function create(
-        string calldata _details,
-        string memory _tokenURI,
-        address[3][] calldata _members,
-        string[] calldata _quests,
-        bool _paused,
+        QuestChainCommons.QuestChainInfo calldata _info,
         bytes32 _salt
+    ) external returns (address);
+
+    function createAndUpgrade(
+        QuestChainCommons.QuestChainInfo calldata _info,
+        bytes32 _salt
+    ) external returns (address);
+
+    function createAndUpgradeWithPermit(
+        QuestChainCommons.QuestChainInfo calldata _info,
+        bytes32 _salt,
+        uint256 _deadline,
+        bytes calldata _signature
     ) external returns (address);
 
     function predictAddress(bytes32 _salt) external returns (address);
@@ -47,6 +57,6 @@ interface IQuestChainFactory {
     function upgradeQuestChainWithPermit(
         address _questChainAddress,
         uint256 _deadline,
-        bytes memory _signature
+        bytes calldata _signature
     ) external;
 }

@@ -63,48 +63,47 @@ contract QuestChain is
     }
 
     function _setupRoles(
-        address _owner,
-        address[3][] calldata _members
+        address[] calldata _owners,
+        address[] calldata _admins,
+        address[] calldata _editors,
+        address[] calldata _reviewers
     ) internal {
-        _grantRole(OWNER_ROLE, _owner);
-        _grantRole(ADMIN_ROLE, _owner);
-        _grantRole(EDITOR_ROLE, _owner);
-        _grantRole(REVIEWER_ROLE, _owner);
-
-
-        for (uint256 i = 0; i < _members[0].length; i = i + 1) {
-            _grantRole(ADMIN_ROLE, _members[0][i]);
-            _grantRole(EDITOR_ROLE, _members[0][i]);
-            _grantRole(REVIEWER_ROLE, _members[0][i]);
+        for (uint256 i = 0; i < _owners.length; i = i + 1) {
+            _grantRole(OWNER_ROLE, _owners[i]);
+            _grantRole(ADMIN_ROLE, _owners[i]);
+            _grantRole(EDITOR_ROLE, _owners[i]);
+            _grantRole(REVIEWER_ROLE, _owners[i]);
         }
 
-        for (uint256 i = 0; i < _members[1].length; i = i + 1) {
-            _grantRole(EDITOR_ROLE, _members[1][i]);
-            _grantRole(REVIEWER_ROLE, _members[1][i]);
+        for (uint256 i = 0; i < _admins.length; i = i + 1) {
+            _grantRole(ADMIN_ROLE, _admins[i]);
+            _grantRole(EDITOR_ROLE, _admins[i]);
+            _grantRole(REVIEWER_ROLE, _admins[i]);
         }
 
-        for (uint256 i = 0; i < _members[2].length; i = i + 1) {
-            _grantRole(REVIEWER_ROLE, _members[2][i]);
+        for (uint256 i = 0; i < _editors.length; i = i + 1) {
+            _grantRole(EDITOR_ROLE, _editors[i]);
+            _grantRole(REVIEWER_ROLE, _editors[i]);
+        }
+
+        for (uint256 i = 0; i < _reviewers.length; i = i + 1) {
+            _grantRole(REVIEWER_ROLE, _reviewers[i]);
         }
     }
 
-    function init(
-        address _owner,
-        string calldata _details,
-        string memory _tokenURI,
-        address[3][] calldata _members,
-        string[] calldata _quests,
-        bool _paused
-    ) external initializer {
+    function init(QuestChainCommons.QuestChainInfo calldata _info)
+        external
+        initializer
+    {
         _setupConstants();
-        _setTokenURI(_tokenURI);
-        _setupRoles(_owner, _members);
+        _setTokenURI(_info.tokenURI);
+        _setupRoles(_info.owners, _info.admins, _info.editors, _info.reviewers);
 
-        questCount = questCount + _quests.length;
-        if (_paused) {
+        questCount = questCount + _info.quests.length;
+        if (_info.paused) {
             _pause();
         }
-        emit QuestChainInit(_owner, _details, _quests, _paused);
+        emit QuestChainInit(_info.details, _info.quests, _info.paused);
     }
 
     function grantRole(bytes32 role, address account)

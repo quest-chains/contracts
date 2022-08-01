@@ -4,6 +4,7 @@ import { MockContract } from 'ethereum-waffle';
 import { ethers, waffle } from 'hardhat';
 
 import { IERC20__factory, QuestChain, QuestChainFactory } from '../types';
+import { QuestChainCommons } from '../types/contracts/QuestChain';
 import {
   awaitQuestChainAddress,
   deploy,
@@ -52,21 +53,25 @@ describe('QuestChain', () => {
       10,
     );
 
-    const tx = await chainFactory.create(
-      DETAILS_STRING,
-      URI_STRING,
-      [],
-      [],
-      [],
-      numberToBytes32(0),
-    );
+    const info: QuestChainCommons.QuestChainInfoStruct = {
+      details: DETAILS_STRING,
+      tokenURI: URI_STRING,
+      owners: [owner.address],
+      admins: [],
+      editors: [],
+      reviewers: [],
+      quests: [],
+      paused: false,
+    };
+
+    const tx = await chainFactory.create(info, numberToBytes32(0));
     chainAddress = await awaitQuestChainAddress(await tx.wait());
 
     chain = await getContractAt<QuestChain>('QuestChain', chainAddress);
 
     await expect(tx)
-      .to.emit(chain, 'QuestChainCreated')
-      .withArgs(owner.address, DETAILS_STRING);
+      .to.emit(chain, 'QuestChainInit')
+      .withArgs(DETAILS_STRING, [], false);
   });
 
   it('Should initialize correctly', async () => {

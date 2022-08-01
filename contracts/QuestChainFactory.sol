@@ -28,15 +28,6 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
     address public paymentToken;
     uint256 public upgradeFee;
 
-    struct QuestChainInfo {
-        address chainAddress;
-        string details;
-        string tokenURI;
-        address[3][] members;
-        string[] quests;
-        bool paused;
-    }
-
     modifier onlyAdmin() {
         require(admin == msg.sender, "QuestChainFactory: not admin");
         _;
@@ -138,27 +129,37 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
     }
 
     function create(
-        string calldata _details,
-        string calldata _tokenURI,
-        address[3][] calldata _members,
-        string[] calldata _quests,
-        bool _paused,
+        QuestChainCommons.QuestChainInfo calldata _info,
         bytes32 _salt
     ) external returns (address) {
-        QuestChainInfo memory info;
+        address _questChainAddress = _newClone(_salt);
+        _setupQuestChain(_questChainAddress, _info);
 
-        {
-            info.chainAddress = _newClone(_salt);
-            info.details = _details;
-            info.tokenURI = _tokenURI;
-            info.members = _members;
-            info.quests = _quests;
-            info.paused = _paused;
-        }
+        return _questChainAddress;
+    }
 
-        _setupQuestChain(info);
+    function createAndUpgrade(
+        QuestChainCommons.QuestChainInfo calldata _info,
+        bytes32 _salt
+    ) external returns (address) {
+        address _questChainAddress = _newClone(_salt);
+        _setupQuestChain(_questChainAddress, _info);
+        _upgradeQuestChain(_questChainAddress);
 
-        return info.chainAddress;
+        return _questChainAddress;
+    }
+
+    function createAndUpgradeWithPermit(
+        QuestChainCommons.QuestChainInfo calldata _info,
+        bytes32 _salt,
+        uint256 _deadline,
+        bytes calldata _signature
+    ) external returns (address) {
+        address _questChainAddress = _newClone(_salt);
+        _setupQuestChain(_questChainAddress, _info);
+        _upgradeQuestChainWithPermit(_questChainAddress, _deadline, _signature);
+
+        return _questChainAddress;
     }
 
     function getQuestChainAddress(uint256 _index)
@@ -179,42 +180,28 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
     function upgradeQuestChainWithPermit(
         address _questChainAddress,
         uint256 _deadline,
-        bytes memory _signature
+        bytes calldata _signature
     ) external nonReentrant {
-        (uint8 v, bytes32 r, bytes32 s) = _recoverParameters(_signature);
-        IERC20Permit(paymentToken).safePermit(
-            msg.sender,
-            address(this),
-            upgradeFee,
-            _deadline,
-            v,
-            r,
-            s
-        );
-        _upgradeQuestChain(_questChainAddress);
+        _upgradeQuestChainWithPermit(_questChainAddress, _deadline, _signature);
     }
 
     function _newClone(bytes32 _salt) internal returns (address) {
         return Clones.cloneDeterministic(questChainImpl, _salt);
     }
 
-    function _setupQuestChain(QuestChainInfo memory _info) internal {
+    function _setupQuestChain(
+        address _questChainAddress,
+        QuestChainCommons.QuestChainInfo calldata _info
+    ) internal {
         IQuestChainToken(questChainToken).setTokenOwner(
             questChainCount,
-            _info.chainAddress
+            _questChainAddress
         );
 
-        IQuestChain(_info.chainAddress).init(
-            msg.sender,
-            _info.details,
-            _info.tokenURI,
-            _info.members,
-            _info.quests,
-            _info.paused
-        );
+        IQuestChain(_questChainAddress).init(_info);
 
-        _questChains[questChainCount] = _info.chainAddress;
-        emit QuestChainCreated(questChainCount, _info.chainAddress);
+        _questChains[questChainCount] = _questChainAddress;
+        emit QuestChainCreated(questChainCount, _questChainAddress);
 
         questChainCount++;
     }
@@ -225,23 +212,23 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
         emit QuestChainUpgraded(_questChainAddress, msg.sender, upgradeFee);
     }
 
-    function _recoverParameters(bytes memory _signature)
-        internal
-        pure
-        returns (
-            uint8 v,
-            bytes32 r,
-            bytes32 s
-        )
-    {
-        require(
-            _signature.length == 65,
-            "QuestChainFactory: invalid signature"
+    function _upgradeQuestChainWithPermit(
+        address _questChainAddress,
+        uint256 _deadline,
+        bytes calldata _signature
+    ) internal {
+        (uint8 v, bytes32 r, bytes32 s) = QuestChainCommons.recoverParameters(
+            _signature
         );
-        assembly {
-            r := mload(add(_signature, 0x20))
-            s := mload(add(_signature, 0x40))
-            v := byte(0, mload(add(_signature, 0x60)))
-        }
+        IERC20Permit(paymentToken).safePermit(
+            msg.sender,
+            address(this),
+            upgradeFee,
+            _deadline,
+            v,
+            r,
+            s
+        );
+        _upgradeQuestChain(_questChainAddress);
     }
 }
