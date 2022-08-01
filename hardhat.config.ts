@@ -3,7 +3,6 @@ import '@nomiclabs/hardhat-waffle';
 import '@typechain/hardhat';
 import 'hardhat-gas-reporter';
 import 'solidity-coverage';
-import './tasks/verify-blockscout';
 
 import dotenv from 'dotenv';
 import { HardhatUserConfig, task } from 'hardhat/config';
@@ -57,6 +56,7 @@ const config: HardhatUserConfig = {
       rinkeby: process.env.ETHERSCAN_API_KEY!,
       polygon: process.env.POLYGONSCAN_API_KEY!,
       polygonMumbai: process.env.POLYGONSCAN_API_KEY!,
+      xdai: process.env.BLOCKSCOUT_API_KEY!,
     },
   },
   typechain: {

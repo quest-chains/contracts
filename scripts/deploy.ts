@@ -3,14 +3,16 @@ import fs from 'fs';
 import { ethers, network, run } from 'hardhat';
 
 import {
-  BLOCKSCOUT_CHAIN_IDS,
-  networkName,
-  SUBGRAPH_NETWORK_NAMES,
+  DEFAULT_UPGRADE_FEE,
+  NETWORK_CURRENCY,
+  NETWORK_NAME,
+  PAYMENT_TOKEN,
+  TREASURY_ADDRESS,
   validateSetup,
 } from './utils';
 
 async function main() {
-  const [chainId, deployer] = await validateSetup();
+  const { chainId, deployer, address, balance } = await validateSetup();
   if (!deployer.provider) {
     throw new Error('Provider not found for network');
   }
@@ -18,7 +20,7 @@ async function main() {
     encoding: 'utf-8',
   }).trim();
 
-  console.log('Deploying QuestChainFactory:', networkName[chainId]);
+  console.log('Deploying QuestChainFactory:', NETWORK_NAME[chainId]);
   console.log('Commit Hash:', commitHash);
 
   const QuestChain = await ethers.getContractFactory('QuestChain', {});
@@ -29,7 +31,13 @@ async function main() {
   const QuestChainFactory = await ethers.getContractFactory(
     'QuestChainFactory',
   );
-  const questChainFactory = await QuestChainFactory.deploy(questChain.address);
+  const questChainFactory = await QuestChainFactory.deploy(
+    questChain.address,
+    address,
+    TREASURY_ADDRESS[chainId],
+    PAYMENT_TOKEN[chainId],
+    DEFAULT_UPGRADE_FEE,
+  );
   await questChainFactory.deployed();
   console.log('Factory Address:', questChainFactory.address);
 
@@ -37,6 +45,19 @@ async function main() {
   console.log('Transaction Hash:', txHash);
   const receipt = await deployer.provider.getTransactionReceipt(txHash);
   console.log('Block Number:', receipt.blockNumber);
+
+  const afterBalance = await deployer.provider.getBalance(address);
+  const gasUsed = balance.sub(afterBalance);
+  console.log(
+    'Gas Used:',
+    ethers.utils.formatEther(gasUsed),
+    NETWORK_CURRENCY[chainId],
+  );
+  console.log(
+    'Account Balance:',
+    ethers.utils.formatEther(afterBalance),
+    NETWORK_CURRENCY[chainId],
+  );
 
   if (chainId === 31337) {
     return;
@@ -56,33 +77,25 @@ async function main() {
     JSON.stringify(deploymentInfo, undefined, 2),
   );
 
-  const subgraphInfo = {
-    network: SUBGRAPH_NETWORK_NAMES[network.name] ?? network.name,
-    factory: questChainFactory.address,
-    blockNumber: receipt.blockNumber.toString(),
-  };
-
-  fs.writeFileSync(
-    `../subgraph/src/config/${network.name}.json`,
-    JSON.stringify(subgraphInfo, undefined, 2),
-  );
-
   try {
     await questChainFactory.deployTransaction.wait(5);
     console.log('Verifying Contracts...');
-    const TASK_VERIFY = BLOCKSCOUT_CHAIN_IDS.includes(chainId)
-      ? 'verify:verify-blockscout'
-      : 'verify:verify';
 
-    await run(TASK_VERIFY, {
+    await run('verify:verify', {
       address: questChain.address,
       constructorArguments: [],
     });
     console.log('Verified Implementation');
 
-    await run(TASK_VERIFY, {
+    await run('verify:verify', {
       address: questChainFactory.address,
-      constructorArguments: [questChain.address],
+      constructorArguments: [
+        questChain.address,
+        address,
+        TREASURY_ADDRESS[chainId],
+        PAYMENT_TOKEN[chainId],
+        DEFAULT_UPGRADE_FEE,
+      ],
     });
     console.log('Verified Factory');
   } catch (err) {

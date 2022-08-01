@@ -9,7 +9,7 @@
     "coverage": "hardhat coverage",
     "build": "hardhat clean && hardhat compile",
     "typecheck": "tsc",
-    "deploy": "yarn flatten && hardhat run scripts/deploy.ts",
+    "deploy": "hardhat run scripts/deploy.ts",
     "lint": "yarn lint:sol && yarn lint:ts && yarn format",
     "lint:ts": "eslint --ignore-path .gitignore \"./**/*.{ts,js}\" --fix",
     "lint:sol": "solhint -f table \"contracts/{*,**/*}.sol\"",

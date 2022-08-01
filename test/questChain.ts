@@ -49,6 +49,7 @@ describe('QuestChain', () => {
       {},
       questChainImpl.address,
       signers[0].address,
+      signers[0].address,
       mockToken.address,
       10,
     );

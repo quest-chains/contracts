@@ -55,17 +55,19 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
 
     constructor(
         address _impl,
+        address _admin,
         address _treasury,
         address _paymentToken,
         uint256 _upgradeFee
     )
         nonZeroAddr(_impl)
+        nonZeroAddr(_admin)
         nonZeroAddr(_treasury)
         nonZeroAddr(_paymentToken)
         nonZeroUint(_upgradeFee)
     {
         questChainToken = address(new QuestChainToken());
-        admin = msg.sender;
+        admin = _admin;
         questChainImpl = _impl;
         treasury = _treasury;
         paymentToken = _paymentToken;

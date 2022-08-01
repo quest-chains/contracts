@@ -48,6 +48,7 @@ describe('QuestChainFactory', () => {
       {},
       questChainImpl.address,
       admin,
+      admin,
       mockToken.address,
       10,
     );

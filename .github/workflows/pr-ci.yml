@@ -1,0 +1,56 @@
+name: Quest Chains CI
+
+on:
+  pull_request:
+    branches:
+      - main
+      - dev
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  test:
+    name: Run Sanity Checks
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Cancel Previous Runs
+        uses: styfle/cancel-workflow-action@0.10.0
+        with:
+          access_token: ${{ github.token }}
+      - uses: actions/checkout@v3
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 16.x
+
+      - uses: actions/cache@v3
+        with:
+          path: '**/node_modules'
+          key: nodeModules-${{ runner.os }}-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Install Packages
+        run: yarn --frozen-lockfile
+        env:
+          CI: true
+
+      - name: Run Linter Analysis
+        run: yarn lint
+        env:
+          CI: true
+
+      - name: Test Compilation
+        run: yarn compile
+        env:
+          CI: true
+
+      - name: Test Deployment
+        run: yarn deploy --network hardhat
+        env:
+          CI: true
+
+      - name: Test Contracts
+        run: yarn test
+        env:
+          CI: true
