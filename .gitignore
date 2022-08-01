@@ -25,3 +25,4 @@ artifacts
 
 # vim
 *.sw[a-z]
+.vscode/settings.json
