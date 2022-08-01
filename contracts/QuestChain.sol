@@ -195,7 +195,6 @@ contract QuestChain is
         external
         override
         onlyRole(EDITOR_ROLE)
-        whenNotPaused
     {
         uint256 _loopLength = _detailsList.length;
         uint256 _questCount = questCount;
@@ -213,7 +212,7 @@ contract QuestChain is
     function editQuests(
         uint256[] calldata _questIdList,
         string[] calldata _detailsList
-    ) external override onlyRole(EDITOR_ROLE) whenNotPaused {
+    ) external override onlyRole(EDITOR_ROLE) {
         uint256 _loopLength = _questIdList.length;
 
         require(
