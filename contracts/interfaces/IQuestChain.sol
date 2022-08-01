@@ -1,36 +1,25 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity ^0.8.11;
+pragma solidity 0.8.15;
 
+import "../libraries/QuestChainCommons.sol";
 import "./IQuestChainToken.sol";
 
 interface IQuestChain {
-    event QuestChainCreated(address indexed creator, string details);
-    event QuestChainEdited(address indexed editor, string details);
-    event QuestCreated(
-        address indexed creator,
-        uint256 indexed questId,
-        string details
-    );
-    event QuestEdited(
-        address indexed editor,
-        uint256 indexed questId,
-        string details
-    );
-    event QuestProofSubmitted(
-        address indexed quester,
-        uint256 indexed questId,
-        string proof
-    );
+    event QuestChainInit(string details, string[] quests, bool paused);
+    event QuestChainEdited(address editor, string details);
+    event QuestCreated(address creator, uint256 questId, string details);
+    event QuestEdited(address editor, uint256 questId, string details);
+    event QuestProofSubmitted(address quester, uint256 questId, string proof);
     event QuestProofReviewed(
-        address indexed reviewer,
-        address indexed quester,
-        uint256 indexed questId,
+        address reviewer,
+        address quester,
+        uint256 questId,
         bool success,
         string details
     );
-    event QuestPaused(address indexed editor, uint256 indexed questId);
-    event QuestUnpaused(address indexed editor, uint256 indexed questId);
+    event QuestPaused(address editor, uint256 questId);
+    event QuestUnpaused(address editor, uint256 questId);
     event QuestChainTokenURIUpdated(string tokenURI);
 
     enum Status {
@@ -46,20 +35,7 @@ interface IQuestChain {
 
     function questChainId() external view returns (uint256);
 
-    function init(
-        address _owner,
-        string calldata _details,
-        string memory _tokenURI
-    ) external;
-
-    function initWithRoles(
-        address _owner,
-        string calldata _details,
-        string memory _tokenURI,
-        address[] calldata _admins,
-        address[] calldata _editors,
-        address[] calldata _reviewers
-    ) external;
+    function init(QuestChainCommons.QuestChainInfo calldata _info) external;
 
     function setTokenURI(string memory _tokenURI) external;
 
@@ -85,7 +61,9 @@ interface IQuestChain {
         view
         returns (Status);
 
-    function mintToken(address _quester) external;
+    function mintToken() external;
 
-    function burnToken(address _quester) external;
+    function burnToken() external;
+
+    function upgrade() external;
 }

@@ -1,10 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.15;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
 
 import "./interfaces/IQuestChain.sol";
 import "./interfaces/IQuestChainFactory.sol";
@@ -12,163 +14,221 @@ import "./QuestChainToken.sol";
 
 // author: @dan13ram
 
-contract QuestChainFactory is IQuestChainFactory, Ownable {
+contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
+    using SafeERC20 for IERC20;
+    using SafeERC20 for IERC20Permit;
+
     uint256 public questChainCount = 0;
     mapping(uint256 => address) private _questChains;
 
-    address public override questChainImpl;
-    address public override questChainToken;
+    address public admin;
+    address public questChainImpl;
+    address public questChainToken;
+    address public treasury;
+    address public paymentToken;
+    uint256 public upgradeFee;
 
-    constructor(address _questChainImpl) {
+    modifier onlyAdmin() {
+        require(admin == msg.sender, "QuestChainFactory: not admin");
+        _;
+    }
+
+    modifier nonZeroAddr(address _address) {
+        require(_address != address(0), "QuestChainFactory: 0 address");
+        _;
+    }
+
+    modifier nonZeroUint(uint256 _uint) {
+        require(_uint != 0, "QuestChainFactory: 0 uint256");
+        _;
+    }
+
+    modifier mustChangeAddr(address _oldAddress, address _newAddress) {
+        require(_oldAddress != _newAddress, "QuestChainFactory: no change");
+        _;
+    }
+
+    modifier mustChangeUint(uint256 _oldUint, uint256 _newUint) {
+        require(_oldUint != _newUint, "QuestChainFactory: no change");
+        _;
+    }
+
+    constructor(
+        address _impl,
+        address _treasury,
+        address _paymentToken,
+        uint256 _upgradeFee
+    )
+        nonZeroAddr(_impl)
+        nonZeroAddr(_treasury)
+        nonZeroAddr(_paymentToken)
+        nonZeroUint(_upgradeFee)
+    {
         questChainToken = address(new QuestChainToken());
-        updateChainImpl(_questChainImpl);
+        admin = msg.sender;
+        questChainImpl = _impl;
+        treasury = _treasury;
+        paymentToken = _paymentToken;
+        upgradeFee = _upgradeFee;
+
+        emit FactoryInit();
     }
 
-    function updateChainImpl(address _questChainImpl) public onlyOwner {
-        require(
-            Address.isContract(_questChainImpl),
-            "QuestChainFactory: invalid impl"
-        );
-        address oldImpl = questChainImpl;
-        questChainImpl = _questChainImpl;
-        emit QuestChainImplUpdated(oldImpl, _questChainImpl);
-    }
-
-    function _newQuestChain(
-        address _questChainAddress,
-        string calldata _details,
-        string memory _tokenURI
-    ) internal {
-        IQuestChainToken(questChainToken).setTokenOwner(
-            questChainCount,
-            _questChainAddress
-        );
-
-        IQuestChain(_questChainAddress).init(_msgSender(), _details, _tokenURI);
-
-        _questChains[questChainCount] = _questChainAddress;
-
-        emit QuestChainCreated(questChainCount, _questChainAddress);
-
-        questChainCount++;
-    }
-
-    function _newQuestChainWithRoles(
-        address _questChainAddress,
-        string calldata _details,
-        string memory _tokenURI,
-        address[] calldata _admins,
-        address[] calldata _editors,
-        address[] calldata _reviewers
-    ) internal {
-        IQuestChainToken(questChainToken).setTokenOwner(
-            questChainCount,
-            _questChainAddress
-        );
-
-        IQuestChain(_questChainAddress).initWithRoles(
-            _msgSender(),
-            _details,
-            _tokenURI,
-            _admins,
-            _editors,
-            _reviewers
-        );
-
-        _questChains[questChainCount] = _questChainAddress;
-        emit QuestChainCreated(questChainCount, _questChainAddress);
-
-        questChainCount++;
-    }
-
-    function create(string calldata _details, string memory _tokenURI)
-        external
-        override
-        returns (address)
+    function replaceAdmin(address _admin)
+        public
+        onlyAdmin
+        nonZeroAddr(_admin)
+        mustChangeAddr(admin, _admin)
     {
-        address questChainAddress = Clones.clone(questChainImpl);
-
-        _newQuestChain(questChainAddress, _details, _tokenURI);
-
-        return questChainAddress;
+        admin = _admin;
+        emit AdminReplaced(_admin);
     }
 
-    function createWithRoles(
-        string calldata _details,
-        string memory _tokenURI,
-        address[] calldata _admins,
-        address[] calldata _editors,
-        address[] calldata _reviewers
-    ) external override returns (address) {
-        address questChainAddress = Clones.clone(questChainImpl);
-
-        _newQuestChainWithRoles(
-            questChainAddress,
-            _details,
-            _tokenURI,
-            _admins,
-            _editors,
-            _reviewers
-        );
-
-        return questChainAddress;
-    }
-
-    function predictDeterministicAddress(bytes32 _salt)
-        external
-        view
-        override
-        returns (address)
+    function replaceChainImpl(address _impl)
+        public
+        onlyAdmin
+        nonZeroAddr(_impl)
+        mustChangeAddr(questChainImpl, _impl)
     {
+        questChainImpl = _impl;
+        emit ImplReplaced(_impl);
+    }
+
+    function replaceTreasury(address _treasury)
+        public
+        onlyAdmin
+        nonZeroAddr(_treasury)
+        mustChangeAddr(treasury, _treasury)
+    {
+        treasury = _treasury;
+        emit TreasuryReplaced(_treasury);
+    }
+
+    function replacePaymentToken(address _paymentToken)
+        public
+        onlyAdmin
+        nonZeroAddr(_paymentToken)
+        mustChangeAddr(paymentToken, _paymentToken)
+    {
+        paymentToken = _paymentToken;
+        emit PaymentTokenReplaced(_paymentToken);
+    }
+
+    function replaceUpgradeFee(uint256 _upgradeFee)
+        public
+        onlyAdmin
+        nonZeroUint(_upgradeFee)
+        mustChangeUint(upgradeFee, _upgradeFee)
+    {
+        upgradeFee = _upgradeFee;
+        emit UpgradeFeeReplaced(_upgradeFee);
+    }
+
+    function predictAddress(bytes32 _salt) external view returns (address) {
         return Clones.predictDeterministicAddress(questChainImpl, _salt);
     }
 
-    function createDeterministic(
-        string calldata _details,
-        string memory _tokenURI,
+    function create(
+        QuestChainCommons.QuestChainInfo calldata _info,
         bytes32 _salt
-    ) external override returns (address) {
-        address questChainAddress = Clones.cloneDeterministic(
-            questChainImpl,
-            _salt
-        );
+    ) external returns (address) {
+        address _questChainAddress = _newClone(_salt);
+        _setupQuestChain(_questChainAddress, _info);
 
-        _newQuestChain(questChainAddress, _details, _tokenURI);
-
-        return questChainAddress;
+        return _questChainAddress;
     }
 
-    function createDeterministicWithRoles(
-        string calldata _details,
-        string memory _tokenURI,
-        address[] calldata _admins,
-        address[] calldata _editors,
-        address[] calldata _reviewers,
+    function createAndUpgrade(
+        QuestChainCommons.QuestChainInfo calldata _info,
         bytes32 _salt
-    ) external override returns (address) {
-        address questChainAddress = Clones.cloneDeterministic(
-            questChainImpl,
-            _salt
-        );
+    ) external returns (address) {
+        address _questChainAddress = _newClone(_salt);
+        _setupQuestChain(_questChainAddress, _info);
+        _upgradeQuestChain(_questChainAddress);
 
-        _newQuestChainWithRoles(
-            questChainAddress,
-            _details,
-            _tokenURI,
-            _admins,
-            _editors,
-            _reviewers
-        );
+        return _questChainAddress;
+    }
 
-        return questChainAddress;
+    function createAndUpgradeWithPermit(
+        QuestChainCommons.QuestChainInfo calldata _info,
+        bytes32 _salt,
+        uint256 _deadline,
+        bytes calldata _signature
+    ) external returns (address) {
+        address _questChainAddress = _newClone(_salt);
+        _setupQuestChain(_questChainAddress, _info);
+        _upgradeQuestChainWithPermit(_questChainAddress, _deadline, _signature);
+
+        return _questChainAddress;
     }
 
     function getQuestChainAddress(uint256 _index)
-        public
+        external
         view
-        override
         returns (address)
     {
         return _questChains[_index];
+    }
+
+    function upgradeQuestChain(address _questChainAddress)
+        external
+        nonReentrant
+    {
+        _upgradeQuestChain(_questChainAddress);
+    }
+
+    function upgradeQuestChainWithPermit(
+        address _questChainAddress,
+        uint256 _deadline,
+        bytes calldata _signature
+    ) external nonReentrant {
+        _upgradeQuestChainWithPermit(_questChainAddress, _deadline, _signature);
+    }
+
+    function _newClone(bytes32 _salt) internal returns (address) {
+        return Clones.cloneDeterministic(questChainImpl, _salt);
+    }
+
+    function _setupQuestChain(
+        address _questChainAddress,
+        QuestChainCommons.QuestChainInfo calldata _info
+    ) internal {
+        IQuestChainToken(questChainToken).setTokenOwner(
+            questChainCount,
+            _questChainAddress
+        );
+
+        IQuestChain(_questChainAddress).init(_info);
+
+        _questChains[questChainCount] = _questChainAddress;
+        emit QuestChainCreated(questChainCount, _questChainAddress);
+
+        questChainCount++;
+    }
+
+    function _upgradeQuestChain(address _questChainAddress) internal {
+        IERC20(paymentToken).safeTransferFrom(msg.sender, treasury, upgradeFee);
+        IQuestChain(_questChainAddress).upgrade();
+        emit QuestChainUpgraded(_questChainAddress, msg.sender, upgradeFee);
+    }
+
+    function _upgradeQuestChainWithPermit(
+        address _questChainAddress,
+        uint256 _deadline,
+        bytes calldata _signature
+    ) internal {
+        (uint8 v, bytes32 r, bytes32 s) = QuestChainCommons.recoverParameters(
+            _signature
+        );
+        IERC20Permit(paymentToken).safePermit(
+            msg.sender,
+            address(this),
+            upgradeFee,
+            _deadline,
+            v,
+            r,
+            s
+        );
+        _upgradeQuestChain(_questChainAddress);
     }
 }

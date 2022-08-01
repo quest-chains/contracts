@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 // solhint-disable max-states-count
 
-pragma solidity ^0.8.11;
+pragma solidity 0.8.15;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
@@ -27,53 +27,53 @@ contract QuestChain is
 
     mapping(uint256 => bool) public questPaused;
     uint256 public questCount;
-    IQuestChainFactory public override questChainFactory;
-    uint256 public override questChainId;
+    IQuestChainFactory public questChainFactory;
+    uint256 public questChainId;
+    bool public premium;
 
     mapping(address => mapping(uint256 => Status)) private _questStatus;
 
     // solhint-disable-next-line no-empty-blocks
     constructor() initializer {}
 
-    function _init(address _owner, string memory _tokenURI) private {
-        questChainFactory = IQuestChainFactory(msg.sender);
+    modifier onlyFactory() {
+        require(
+            _msgSender() == address(questChainFactory),
+            "QuestChain: not factory"
+        );
+        _;
+    }
+
+    modifier onlyPremium() {
+        require(premium == true, "QuestChain: not premium");
+        _;
+    }
+
+    function questChainToken() public view returns (IQuestChainToken) {
+        return IQuestChainToken(questChainFactory.questChainToken());
+    }
+
+    function _setupConstants() internal {
+        questChainFactory = IQuestChainFactory(_msgSender());
         questChainId = questChainFactory.questChainCount();
 
         _setRoleAdmin(ADMIN_ROLE, OWNER_ROLE);
         _setRoleAdmin(EDITOR_ROLE, ADMIN_ROLE);
         _setRoleAdmin(REVIEWER_ROLE, ADMIN_ROLE);
-
-        _grantRole(OWNER_ROLE, _owner);
-        _grantRole(ADMIN_ROLE, _owner);
-        _grantRole(EDITOR_ROLE, _owner);
-        _grantRole(REVIEWER_ROLE, _owner);
-
-        _setTokenURI(_tokenURI);
     }
 
-    function questChainToken() public view override returns (IQuestChainToken) {
-        return IQuestChainToken(questChainFactory.questChainToken());
-    }
-
-    function init(
-        address _owner,
-        string calldata _details,
-        string memory _tokenURI
-    ) external override initializer {
-        _init(_owner, _tokenURI);
-
-        emit QuestChainCreated(_owner, _details);
-    }
-
-    function initWithRoles(
-        address _owner,
-        string calldata _details,
-        string memory _tokenURI,
+    function _setupRoles(
+        address[] calldata _owners,
         address[] calldata _admins,
         address[] calldata _editors,
         address[] calldata _reviewers
-    ) external override initializer {
-        _init(_owner, _tokenURI);
+    ) internal {
+        for (uint256 i = 0; i < _owners.length; i = i + 1) {
+            _grantRole(OWNER_ROLE, _owners[i]);
+            _grantRole(ADMIN_ROLE, _owners[i]);
+            _grantRole(EDITOR_ROLE, _owners[i]);
+            _grantRole(REVIEWER_ROLE, _owners[i]);
+        }
 
         for (uint256 i = 0; i < _admins.length; i = i + 1) {
             _grantRole(ADMIN_ROLE, _admins[i]);
@@ -89,8 +89,21 @@ contract QuestChain is
         for (uint256 i = 0; i < _reviewers.length; i = i + 1) {
             _grantRole(REVIEWER_ROLE, _reviewers[i]);
         }
+    }
 
-        emit QuestChainCreated(_owner, _details);
+    function init(QuestChainCommons.QuestChainInfo calldata _info)
+        external
+        initializer
+    {
+        _setupConstants();
+        _setTokenURI(_info.tokenURI);
+        _setupRoles(_info.owners, _info.admins, _info.editors, _info.reviewers);
+
+        questCount = questCount + _info.quests.length;
+        if (_info.paused) {
+            _pause();
+        }
+        emit QuestChainInit(_info.details, _info.quests, _info.paused);
     }
 
     function grantRole(bytes32 role, address account)
@@ -153,13 +166,13 @@ contract QuestChain is
 
     function setTokenURI(string memory _tokenURI)
         public
-        override
         onlyRole(OWNER_ROLE)
+        onlyPremium
     {
         _setTokenURI(_tokenURI);
     }
 
-    function getTokenURI() public view override returns (string memory) {
+    function getTokenURI() public view returns (string memory) {
         return questChainToken().uri(questChainId);
     }
 
@@ -183,17 +196,12 @@ contract QuestChain is
         emit QuestUnpaused(_msgSender(), _questId);
     }
 
-    function edit(string calldata _details)
-        external
-        override
-        onlyRole(ADMIN_ROLE)
-    {
+    function edit(string calldata _details) external onlyRole(ADMIN_ROLE) {
         emit QuestChainEdited(_msgSender(), _details);
     }
 
     function createQuest(string calldata _details)
         external
-        override
         onlyRole(EDITOR_ROLE)
         whenNotPaused
     {
@@ -204,7 +212,6 @@ contract QuestChain is
 
     function editQuest(uint256 _questId, string calldata _details)
         external
-        override
         onlyRole(EDITOR_ROLE)
         whenNotPaused
         validQuest(_questId)
@@ -214,7 +221,6 @@ contract QuestChain is
 
     function submitProof(uint256 _questId, string calldata _proof)
         external
-        override
         whenNotPaused
         whenQuestNotPaused(_questId)
         validQuest(_questId)
@@ -232,7 +238,7 @@ contract QuestChain is
         uint256 _questId,
         bool _success,
         string calldata _details
-    ) external override onlyRole(REVIEWER_ROLE) validQuest(_questId) {
+    ) external onlyRole(REVIEWER_ROLE) validQuest(_questId) {
         Status status = _questStatus[_quester][_questId];
         require(status == Status.review, "QuestChain: quest not in review");
         _questStatus[_quester][_questId] = _success ? Status.pass : Status.fail;
@@ -249,26 +255,32 @@ contract QuestChain is
     function questStatus(address _quester, uint256 _questId)
         external
         view
-        override
         validQuest(_questId)
         returns (Status status)
     {
         status = _questStatus[_quester][_questId];
     }
 
-    function mintToken(address _quester) public override {
+    function mintToken() public {
+        address quester = _msgSender();
         require(questCount > 0, "QuestChain: no quests found");
         for (uint256 questId = 0; questId < questCount; questId = questId + 1) {
             require(
                 questPaused[questId] ||
-                    _questStatus[_quester][questId] == Status.pass,
+                    _questStatus[quester][questId] == Status.pass,
                 "QuestChain: chain incomplete"
             );
         }
-        questChainToken().mint(_quester, questChainId);
+        questChainToken().mint(quester, questChainId);
     }
 
-    function burnToken(address _quester) public override onlyRole(OWNER_ROLE) {
-        questChainToken().burn(_quester, questChainId);
+    function burnToken() public {
+        address quester = _msgSender();
+        questChainToken().burn(quester, questChainId);
+    }
+
+    function upgrade() public onlyFactory {
+        require(premium == false, "QuestChain: already upgraded");
+        premium = true;
     }
 }
