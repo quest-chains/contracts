@@ -191,7 +191,7 @@ contract QuestChain is
         emit QuestChainEdited(_msgSender(), _details);
     }
 
-    function createQuest(string[] calldata _detailsList)
+    function createQuests(string[] calldata _detailsList)
         external
         override
         onlyRole(EDITOR_ROLE)
@@ -207,10 +207,10 @@ contract QuestChain is
 
         questCount += _detailsList.length;
 
-        emit QuestCreated(_msgSender(), _questIdList, _detailsList);
+        emit QuestsCreated(_msgSender(), _questIdList, _detailsList);
     }
 
-    function editQuest(
+    function editQuests(
         uint256[] calldata _questIdList,
         string[] calldata _detailsList
     ) external override onlyRole(EDITOR_ROLE) whenNotPaused {
@@ -228,10 +228,10 @@ contract QuestChain is
             );
         }
 
-        emit QuestEdited(_msgSender(), _questIdList, _detailsList);
+        emit QuestsEdited(_msgSender(), _questIdList, _detailsList);
     }
 
-    function submitProof(
+    function submitProofs(
         uint256[] calldata _questIdList,
         string[] calldata _proofList
     ) external override whenNotPaused {
@@ -243,10 +243,10 @@ contract QuestChain is
             _submitProof(_questIdList[i]);
         }
 
-        emit QuestProofSubmitted(_msgSender(), _questIdList, _proofList);
+        emit QuestProofsSubmitted(_msgSender(), _questIdList, _proofList);
     }
 
-    function reviewProof(
+    function reviewProofs(
         address[] calldata _questerList,
         uint256[] calldata _questIdList,
         bool[] calldata _successList,
@@ -265,7 +265,7 @@ contract QuestChain is
             _reviewProof(_questerList[i], _questIdList[i], _successList[i]);
         }
 
-        emit QuestProofReviewed(
+        emit QuestProofsReviewed(
             _msgSender(),
             _questerList,
             _questIdList,

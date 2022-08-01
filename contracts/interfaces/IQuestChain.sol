@@ -7,22 +7,22 @@ import "./IQuestChainToken.sol";
 interface IQuestChain {
     event QuestChainCreated(address indexed creator, string details);
     event QuestChainEdited(address indexed editor, string details);
-    event QuestCreated(
+    event QuestsCreated(
         address indexed creator,
         uint256[] questIdList,
         string[] detailsList
     );
-    event QuestEdited(
+    event QuestsEdited(
         address indexed editor,
         uint256[] questIdList,
         string[] detailsList
     );
-    event QuestProofSubmitted(
+    event QuestProofsSubmitted(
         address indexed quester,
         uint256[] questIdList,
         string[] proofList
     );
-    event QuestProofReviewed(
+    event QuestProofsReviewed(
         address indexed reviewer,
         address[] questerList,
         uint256[] questIdList,
@@ -67,19 +67,19 @@ interface IQuestChain {
 
     function edit(string calldata _details) external;
 
-    function createQuest(string[] calldata _detailsList) external;
+    function createQuests(string[] calldata _detailsList) external;
 
-    function editQuest(
+    function editQuests(
         uint256[] calldata _questIdList,
         string[] calldata _detailsList
     ) external;
 
-    function submitProof(
+    function submitProofs(
         uint256[] calldata _questIdList,
         string[] calldata _proofList
     ) external;
 
-    function reviewProof(
+    function reviewProofs(
         address[] calldata _questerList,
         uint256[] calldata _questIdList,
         bool[] calldata _successList,
