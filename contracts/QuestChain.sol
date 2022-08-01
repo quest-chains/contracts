@@ -200,55 +200,84 @@ contract QuestChain is
         emit QuestChainEdited(_msgSender(), _details);
     }
 
-    function createQuest(string calldata _details)
+    function createQuests(string[] calldata _detailsList)
         external
         onlyRole(EDITOR_ROLE)
-        whenNotPaused
     {
-        emit QuestCreated(_msgSender(), questCount, _details);
+        uint256 _loopLength = _detailsList.length;
+        uint256 _questCount = questCount;
+        uint256[] memory _questIdList = new uint256[](_loopLength);
 
-        questCount += 1;
+        for (uint256 i; i < _loopLength; i++) {
+            _questIdList[i] = _questCount + i;
+        }
+
+        questCount += _detailsList.length;
+
+        emit QuestsCreated(_msgSender(), _questIdList, _detailsList);
     }
 
-    function editQuest(uint256 _questId, string calldata _details)
-        external
-        onlyRole(EDITOR_ROLE)
-        whenNotPaused
-        validQuest(_questId)
-    {
-        emit QuestEdited(_msgSender(), _questId, _details);
+    function editQuests(
+        uint256[] calldata _questIdList,
+        string[] calldata _detailsList
+    ) external onlyRole(EDITOR_ROLE) {
+        uint256 _loopLength = _questIdList.length;
+
+        require(
+            _loopLength == _detailsList.length,
+            "QuestChain: invalid params"
+        );
+
+        for (uint256 i; i < _loopLength; i++) {
+            require(
+                _questIdList[i] < questCount,
+                "QuestChain: quest not found"
+            );
+        }
+
+        emit QuestsEdited(_msgSender(), _questIdList, _detailsList);
     }
 
-    function submitProof(uint256 _questId, string calldata _proof)
-        external
-        whenNotPaused
-        whenQuestNotPaused(_questId)
-        validQuest(_questId)
-    {
-        Status status = _questStatus[_msgSender()][_questId];
-        require(status != Status.pass, "QuestChain: already passed");
+    function submitProofs(
+        uint256[] calldata _questIdList,
+        string[] calldata _proofList
+    ) external whenNotPaused {
+        uint256 _loopLength = _questIdList.length;
 
-        _questStatus[_msgSender()][_questId] = Status.review;
+        require(_loopLength == _proofList.length, "QuestChain: invalid params");
 
-        emit QuestProofSubmitted(_msgSender(), _questId, _proof);
+        for (uint256 i; i < _loopLength; i++) {
+            _submitProof(_questIdList[i]);
+        }
+
+        emit QuestProofsSubmitted(_msgSender(), _questIdList, _proofList);
     }
 
-    function reviewProof(
-        address _quester,
-        uint256 _questId,
-        bool _success,
-        string calldata _details
-    ) external onlyRole(REVIEWER_ROLE) validQuest(_questId) {
-        Status status = _questStatus[_quester][_questId];
-        require(status == Status.review, "QuestChain: quest not in review");
-        _questStatus[_quester][_questId] = _success ? Status.pass : Status.fail;
+    function reviewProofs(
+        address[] calldata _questerList,
+        uint256[] calldata _questIdList,
+        bool[] calldata _successList,
+        string[] calldata _detailsList
+    ) external onlyRole(REVIEWER_ROLE) {
+        uint256 _loopLength = _questerList.length;
 
-        emit QuestProofReviewed(
+        require(
+            _loopLength == _questIdList.length &&
+                _loopLength == _successList.length &&
+                _loopLength == _detailsList.length,
+            "QuestChain: invalid params"
+        );
+
+        for (uint256 i; i < _loopLength; i++) {
+            _reviewProof(_questerList[i], _questIdList[i], _successList[i]);
+        }
+
+        emit QuestProofsReviewed(
             _msgSender(),
-            _quester,
-            _questId,
-            _success,
-            _details
+            _questerList,
+            _questIdList,
+            _successList,
+            _detailsList
         );
     }
 
@@ -282,5 +311,31 @@ contract QuestChain is
     function upgrade() public onlyFactory {
         require(premium == false, "QuestChain: already upgraded");
         premium = true;
+    }
+
+    function _submitProof(uint256 _questId)
+        internal
+        whenQuestNotPaused(_questId)
+        validQuest(_questId)
+    {
+        require(
+            _questStatus[_msgSender()][_questId] != Status.pass,
+            "QuestChain: already passed"
+        );
+
+        _questStatus[_msgSender()][_questId] = Status.review;
+    }
+
+    function _reviewProof(
+        address _quester,
+        uint256 _questId,
+        bool _success
+    ) internal validQuest(_questId) {
+        require(
+            _questStatus[_quester][_questId] == Status.review,
+            "QuestChain: quest not in review"
+        );
+
+        _questStatus[_quester][_questId] = _success ? Status.pass : Status.fail;
     }
 }

@@ -8,15 +8,27 @@ import "./IQuestChainToken.sol";
 interface IQuestChain {
     event QuestChainInit(string details, string[] quests, bool paused);
     event QuestChainEdited(address editor, string details);
-    event QuestCreated(address creator, uint256 questId, string details);
-    event QuestEdited(address editor, uint256 questId, string details);
-    event QuestProofSubmitted(address quester, uint256 questId, string proof);
-    event QuestProofReviewed(
-        address reviewer,
+    event QuestsCreated(
+        address creator,
+        uint256[] questIdList,
+        string[] detailsList
+    );
+    event QuestsEdited(
+        address editor,
+        uint256[] questIdList,
+        string[] detailsList
+    );
+    event QuestProofsSubmitted(
         address quester,
-        uint256 questId,
-        bool success,
-        string details
+        uint256[] questIdList,
+        string[] proofList
+    );
+    event QuestProofsReviewed(
+        address reviewer,
+        address[] questerList,
+        uint256[] questIdList,
+        bool[] successList,
+        string[] detailsList
     );
     event QuestPaused(address editor, uint256 questId);
     event QuestUnpaused(address editor, uint256 questId);
@@ -43,17 +55,23 @@ interface IQuestChain {
 
     function edit(string calldata _details) external;
 
-    function createQuest(string calldata _details) external;
+    function createQuests(string[] calldata _detailsList) external;
 
-    function editQuest(uint256 _questId, string calldata _details) external;
+    function editQuests(
+        uint256[] calldata _questIdList,
+        string[] calldata _detailsList
+    ) external;
 
-    function submitProof(uint256 _questId, string calldata _proof) external;
+    function submitProofs(
+        uint256[] calldata _questIdList,
+        string[] calldata _proofList
+    ) external;
 
-    function reviewProof(
-        address _quester,
-        uint256 _questId,
-        bool _success,
-        string calldata _details
+    function reviewProofs(
+        address[] calldata _questerList,
+        uint256[] calldata _questIdList,
+        bool[] calldata _successList,
+        string[] calldata _detailsList
     ) external;
 
     function questStatus(address _quester, uint256 _questId)
