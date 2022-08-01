@@ -12,21 +12,7 @@ interface IQuestChainFactory {
     event TreasuryReplaced(address treasury);
     event PaymentTokenReplaced(address paymentToken);
     event UpgradeFeeReplaced(uint256 upgradeFee);
-    event QuestChainUpgraded(address questChain, address sender, uint256 cost);
-
-    function questChainCount() external view returns (uint256);
-
-    function questChainImpl() external view returns (address);
-
-    function questChainToken() external view returns (address);
-
-    function admin() external view returns (address);
-
-    function treasury() external view returns (address);
-
-    function paymentToken() external view returns (address);
-
-    function upgradeFee() external view returns (uint256);
+    event QuestChainUpgraded(address sender, address questChain);
 
     function create(
         QuestChainCommons.QuestChainInfo calldata _info,
@@ -45,13 +31,6 @@ interface IQuestChainFactory {
         bytes calldata _signature
     ) external returns (address);
 
-    function predictAddress(bytes32 _salt) external returns (address);
-
-    function getQuestChainAddress(uint256 _index)
-        external
-        view
-        returns (address);
-
     function upgradeQuestChain(address _questChainAddress) external;
 
     function upgradeQuestChainWithPermit(
@@ -59,4 +38,23 @@ interface IQuestChainFactory {
         uint256 _deadline,
         bytes calldata _signature
     ) external;
+
+    function getQuestChainAddress(uint256 _index)
+        external
+        view
+        returns (address);
+
+    function questChainCount() external view returns (uint256);
+
+    function questChainImpl() external view returns (address);
+
+    function questChainToken() external view returns (address);
+
+    function admin() external view returns (address);
+
+    function treasury() external view returns (address);
+
+    function paymentToken() external view returns (address);
+
+    function upgradeFee() external view returns (uint256);
 }

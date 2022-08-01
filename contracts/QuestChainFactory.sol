@@ -75,7 +75,7 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
     }
 
     function replaceAdmin(address _admin)
-        public
+        external
         onlyAdmin
         nonZeroAddr(_admin)
         mustChangeAddr(admin, _admin)
@@ -85,7 +85,7 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
     }
 
     function replaceChainImpl(address _impl)
-        public
+        external
         onlyAdmin
         nonZeroAddr(_impl)
         mustChangeAddr(questChainImpl, _impl)
@@ -95,7 +95,7 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
     }
 
     function replaceTreasury(address _treasury)
-        public
+        external
         onlyAdmin
         nonZeroAddr(_treasury)
         mustChangeAddr(treasury, _treasury)
@@ -105,7 +105,7 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
     }
 
     function replacePaymentToken(address _paymentToken)
-        public
+        external
         onlyAdmin
         nonZeroAddr(_paymentToken)
         mustChangeAddr(paymentToken, _paymentToken)
@@ -115,7 +115,7 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
     }
 
     function replaceUpgradeFee(uint256 _upgradeFee)
-        public
+        external
         onlyAdmin
         nonZeroUint(_upgradeFee)
         mustChangeUint(upgradeFee, _upgradeFee)
@@ -124,29 +124,20 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
         emit UpgradeFeeReplaced(_upgradeFee);
     }
 
-    function predictAddress(bytes32 _salt) external view returns (address) {
-        return Clones.predictDeterministicAddress(questChainImpl, _salt);
-    }
-
     function create(
         QuestChainCommons.QuestChainInfo calldata _info,
         bytes32 _salt
     ) external returns (address) {
-        address _questChainAddress = _newClone(_salt);
-        _setupQuestChain(_questChainAddress, _info);
-
-        return _questChainAddress;
+        return _create(_info, _salt);
     }
 
     function createAndUpgrade(
         QuestChainCommons.QuestChainInfo calldata _info,
         bytes32 _salt
     ) external returns (address) {
-        address _questChainAddress = _newClone(_salt);
-        _setupQuestChain(_questChainAddress, _info);
-        _upgradeQuestChain(_questChainAddress);
-
-        return _questChainAddress;
+        address questChainAddress = _create(_info, _salt);
+        _upgradeQuestChain(questChainAddress);
+        return questChainAddress;
     }
 
     function createAndUpgradeWithPermit(
@@ -155,19 +146,9 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
         uint256 _deadline,
         bytes calldata _signature
     ) external returns (address) {
-        address _questChainAddress = _newClone(_salt);
-        _setupQuestChain(_questChainAddress, _info);
-        _upgradeQuestChainWithPermit(_questChainAddress, _deadline, _signature);
-
-        return _questChainAddress;
-    }
-
-    function getQuestChainAddress(uint256 _index)
-        external
-        view
-        returns (address)
-    {
-        return _questChains[_index];
+        address questChainAddress = _create(_info, _salt);
+        _upgradeQuestChainWithPermit(questChainAddress, _deadline, _signature);
+        return questChainAddress;
     }
 
     function upgradeQuestChain(address _questChainAddress)
@@ -183,6 +164,24 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
         bytes calldata _signature
     ) external nonReentrant {
         _upgradeQuestChainWithPermit(_questChainAddress, _deadline, _signature);
+    }
+
+    function getQuestChainAddress(uint256 _index)
+        external
+        view
+        returns (address)
+    {
+        return _questChains[_index];
+    }
+
+    function _create(
+        QuestChainCommons.QuestChainInfo calldata _info,
+        bytes32 _salt
+    ) internal returns (address) {
+        address questChainAddress = _newClone(_salt);
+        _setupQuestChain(questChainAddress, _info);
+
+        return questChainAddress;
     }
 
     function _newClone(bytes32 _salt) internal returns (address) {
@@ -209,7 +208,7 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
     function _upgradeQuestChain(address _questChainAddress) internal {
         IERC20(paymentToken).safeTransferFrom(msg.sender, treasury, upgradeFee);
         IQuestChain(_questChainAddress).upgrade();
-        emit QuestChainUpgraded(_questChainAddress, msg.sender, upgradeFee);
+        emit QuestChainUpgraded(msg.sender, _questChainAddress);
     }
 
     function _upgradeQuestChainWithPermit(

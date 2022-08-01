@@ -28,13 +28,11 @@ contract QuestChain is
     mapping(uint256 => bool) public questPaused;
     uint256 public questCount;
     IQuestChainFactory public questChainFactory;
+    IQuestChainToken public questChainToken;
     uint256 public questChainId;
     bool public premium;
 
     mapping(address => mapping(uint256 => Status)) private _questStatus;
-
-    // solhint-disable-next-line no-empty-blocks
-    constructor() initializer {}
 
     modifier onlyFactory() {
         require(
@@ -47,101 +45,6 @@ contract QuestChain is
     modifier onlyPremium() {
         require(premium == true, "QuestChain: not premium");
         _;
-    }
-
-    function questChainToken() public view returns (IQuestChainToken) {
-        return IQuestChainToken(questChainFactory.questChainToken());
-    }
-
-    function _setupConstants() internal {
-        questChainFactory = IQuestChainFactory(_msgSender());
-        questChainId = questChainFactory.questChainCount();
-
-        _setRoleAdmin(ADMIN_ROLE, OWNER_ROLE);
-        _setRoleAdmin(EDITOR_ROLE, ADMIN_ROLE);
-        _setRoleAdmin(REVIEWER_ROLE, ADMIN_ROLE);
-    }
-
-    function _setupRoles(
-        address[] calldata _owners,
-        address[] calldata _admins,
-        address[] calldata _editors,
-        address[] calldata _reviewers
-    ) internal {
-        for (uint256 i = 0; i < _owners.length; i = i + 1) {
-            _grantRole(OWNER_ROLE, _owners[i]);
-            _grantRole(ADMIN_ROLE, _owners[i]);
-            _grantRole(EDITOR_ROLE, _owners[i]);
-            _grantRole(REVIEWER_ROLE, _owners[i]);
-        }
-
-        for (uint256 i = 0; i < _admins.length; i = i + 1) {
-            _grantRole(ADMIN_ROLE, _admins[i]);
-            _grantRole(EDITOR_ROLE, _admins[i]);
-            _grantRole(REVIEWER_ROLE, _admins[i]);
-        }
-
-        for (uint256 i = 0; i < _editors.length; i = i + 1) {
-            _grantRole(EDITOR_ROLE, _editors[i]);
-            _grantRole(REVIEWER_ROLE, _editors[i]);
-        }
-
-        for (uint256 i = 0; i < _reviewers.length; i = i + 1) {
-            _grantRole(REVIEWER_ROLE, _reviewers[i]);
-        }
-    }
-
-    function init(QuestChainCommons.QuestChainInfo calldata _info)
-        external
-        initializer
-    {
-        _setupConstants();
-        _setTokenURI(_info.tokenURI);
-        _setupRoles(_info.owners, _info.admins, _info.editors, _info.reviewers);
-
-        questCount = questCount + _info.quests.length;
-        if (_info.paused) {
-            _pause();
-        }
-        emit QuestChainInit(_info.details, _info.quests, _info.paused);
-    }
-
-    function grantRole(bytes32 role, address account)
-        public
-        override
-        onlyRole(getRoleAdmin(role))
-    {
-        _grantRole(role, account);
-        if (role == OWNER_ROLE) {
-            grantRole(ADMIN_ROLE, account);
-        } else if (role == ADMIN_ROLE) {
-            grantRole(EDITOR_ROLE, account);
-        } else if (role == EDITOR_ROLE) {
-            grantRole(REVIEWER_ROLE, account);
-        }
-    }
-
-    function revokeRole(bytes32 role, address account)
-        public
-        override
-        onlyRole(getRoleAdmin(role))
-    {
-        _revokeRole(role, account);
-        if (role == REVIEWER_ROLE) {
-            revokeRole(EDITOR_ROLE, account);
-        } else if (role == EDITOR_ROLE) {
-            revokeRole(ADMIN_ROLE, account);
-        } else if (role == ADMIN_ROLE) {
-            revokeRole(OWNER_ROLE, account);
-        }
-    }
-
-    function pause() external onlyRole(OWNER_ROLE) {
-        _pause();
-    }
-
-    function unpause() external onlyRole(OWNER_ROLE) {
-        _unpause();
     }
 
     modifier whenQuestNotPaused(uint256 _questId) {
@@ -159,21 +62,58 @@ contract QuestChain is
         _;
     }
 
-    function _setTokenURI(string memory _tokenURI) internal {
-        questChainToken().setTokenURI(questChainId, _tokenURI);
-        emit QuestChainTokenURIUpdated(_tokenURI);
-    }
+    // solhint-disable-next-line no-empty-blocks
+    constructor() initializer {}
 
-    function setTokenURI(string memory _tokenURI)
-        public
-        onlyRole(OWNER_ROLE)
-        onlyPremium
+    function init(QuestChainCommons.QuestChainInfo calldata _info)
+        external
+        initializer
     {
-        _setTokenURI(_tokenURI);
+        questChainFactory = IQuestChainFactory(_msgSender());
+        questChainToken = IQuestChainToken(questChainFactory.questChainToken());
+        questChainId = questChainFactory.questChainCount();
+
+        _setRoleAdmin(ADMIN_ROLE, OWNER_ROLE);
+        _setRoleAdmin(EDITOR_ROLE, ADMIN_ROLE);
+        _setRoleAdmin(REVIEWER_ROLE, ADMIN_ROLE);
+
+        _setTokenURI(_info.tokenURI);
+
+        for (uint256 i = 0; i < _info.owners.length; i = i + 1) {
+            _grantRole(OWNER_ROLE, _info.owners[i]);
+            _grantRole(ADMIN_ROLE, _info.owners[i]);
+            _grantRole(EDITOR_ROLE, _info.owners[i]);
+            _grantRole(REVIEWER_ROLE, _info.owners[i]);
+        }
+
+        for (uint256 i = 0; i < _info.admins.length; i = i + 1) {
+            _grantRole(ADMIN_ROLE, _info.admins[i]);
+            _grantRole(EDITOR_ROLE, _info.admins[i]);
+            _grantRole(REVIEWER_ROLE, _info.admins[i]);
+        }
+
+        for (uint256 i = 0; i < _info.editors.length; i = i + 1) {
+            _grantRole(EDITOR_ROLE, _info.editors[i]);
+            _grantRole(REVIEWER_ROLE, _info.editors[i]);
+        }
+
+        for (uint256 i = 0; i < _info.reviewers.length; i = i + 1) {
+            _grantRole(REVIEWER_ROLE, _info.reviewers[i]);
+        }
+
+        questCount = questCount + _info.quests.length;
+        if (_info.paused) {
+            _pause();
+        }
+        emit QuestChainInit(_info.details, _info.quests, _info.paused);
     }
 
-    function getTokenURI() public view returns (string memory) {
-        return questChainToken().uri(questChainId);
+    function pause() external onlyRole(OWNER_ROLE) {
+        _pause();
+    }
+
+    function unpause() external onlyRole(OWNER_ROLE) {
+        _unpause();
     }
 
     function pauseQuest(uint256 _questId)
@@ -281,16 +221,15 @@ contract QuestChain is
         );
     }
 
-    function questStatus(address _quester, uint256 _questId)
+    function setTokenURI(string memory _tokenURI)
         external
-        view
-        validQuest(_questId)
-        returns (Status status)
+        onlyRole(OWNER_ROLE)
+        onlyPremium
     {
-        status = _questStatus[_quester][_questId];
+        _setTokenURI(_tokenURI);
     }
 
-    function mintToken() public {
+    function mintToken() external {
         address quester = _msgSender();
         require(questCount > 0, "QuestChain: no quests found");
         for (uint256 questId = 0; questId < questCount; questId = questId + 1) {
@@ -300,17 +239,60 @@ contract QuestChain is
                 "QuestChain: chain incomplete"
             );
         }
-        questChainToken().mint(quester, questChainId);
+        questChainToken.mint(quester, questChainId);
     }
 
-    function burnToken() public {
+    function burnToken() external {
         address quester = _msgSender();
-        questChainToken().burn(quester, questChainId);
+        questChainToken.burn(quester, questChainId);
     }
 
-    function upgrade() public onlyFactory {
+    function upgrade() external onlyFactory {
         require(premium == false, "QuestChain: already upgraded");
         premium = true;
+    }
+
+    function questStatus(address _quester, uint256 _questId)
+        external
+        view
+        validQuest(_questId)
+        returns (Status status)
+    {
+        status = _questStatus[_quester][_questId];
+    }
+
+    function grantRole(bytes32 role, address account)
+        public
+        override
+        onlyRole(getRoleAdmin(role))
+    {
+        _grantRole(role, account);
+        if (role == OWNER_ROLE) {
+            grantRole(ADMIN_ROLE, account);
+        } else if (role == ADMIN_ROLE) {
+            grantRole(EDITOR_ROLE, account);
+        } else if (role == EDITOR_ROLE) {
+            grantRole(REVIEWER_ROLE, account);
+        }
+    }
+
+    function revokeRole(bytes32 role, address account)
+        public
+        override
+        onlyRole(getRoleAdmin(role))
+    {
+        _revokeRole(role, account);
+        if (role == REVIEWER_ROLE) {
+            revokeRole(EDITOR_ROLE, account);
+        } else if (role == EDITOR_ROLE) {
+            revokeRole(ADMIN_ROLE, account);
+        } else if (role == ADMIN_ROLE) {
+            revokeRole(OWNER_ROLE, account);
+        }
+    }
+
+    function getTokenURI() public view returns (string memory) {
+        return questChainToken.uri(questChainId);
     }
 
     function _submitProof(uint256 _questId)
@@ -337,5 +319,10 @@ contract QuestChain is
         );
 
         _questStatus[_quester][_questId] = _success ? Status.pass : Status.fail;
+    }
+
+    function _setTokenURI(string memory _tokenURI) internal {
+        questChainToken.setTokenURI(questChainId, _tokenURI);
+        emit QuestChainTokenURIUpdated(_tokenURI);
     }
 }

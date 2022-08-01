@@ -202,37 +202,8 @@ describe('QuestChainFactory', () => {
     expect(await chainFactory.getQuestChainAddress(1)).to.equal(chainAddress);
   });
 
-  it('Should predict QuestChain address', async () => {
-    admin = signers[0].address;
-
-    const predictedAddress = await chainFactory.predictAddress(
-      numberToBytes32(2),
-    );
-
-    const info: QuestChainCommons.QuestChainInfoStruct = {
-      details: DETAILS_STRING,
-      tokenURI: URI_STRING,
-      owners: [admin],
-      admins: [],
-      editors: [],
-      reviewers: [],
-      quests: [],
-      paused: false,
-    };
-
-    const tx = await chainFactory.create(info, numberToBytes32(2));
-
-    chainAddress = await awaitQuestChainAddress(await tx.wait());
-    await expect(tx)
-      .to.emit(chainFactory, 'QuestChainCreated')
-      .withArgs(2, chainAddress);
-
-    expect(chainAddress).to.equal(predictedAddress);
-    expect(await chainFactory.getQuestChainAddress(2)).to.equal(chainAddress);
-  });
-
   it('Should update questChainCount', async () => {
-    expect(await chainFactory.questChainCount()).to.equal(3);
+    expect(await chainFactory.questChainCount()).to.equal(2);
     const info: QuestChainCommons.QuestChainInfoStruct = {
       details: DETAILS_STRING,
       tokenURI: URI_STRING,
@@ -244,14 +215,14 @@ describe('QuestChainFactory', () => {
       paused: false,
     };
 
-    let tx = await chainFactory.create(info, numberToBytes32(3));
+    let tx = await chainFactory.create(info, numberToBytes32(2));
     const chain0 = await awaitQuestChainAddress(await tx.wait());
-    expect(await chainFactory.questChainCount()).to.equal(4);
-    tx = await chainFactory.create(info, numberToBytes32(4));
+    expect(await chainFactory.questChainCount()).to.equal(3);
+    tx = await chainFactory.create(info, numberToBytes32(3));
     const chain1 = await awaitQuestChainAddress(await tx.wait());
-    expect(await chainFactory.questChainCount()).to.equal(5);
+    expect(await chainFactory.questChainCount()).to.equal(4);
 
-    expect(await chainFactory.getQuestChainAddress(3)).to.equal(chain0);
-    expect(await chainFactory.getQuestChainAddress(4)).to.equal(chain1);
+    expect(await chainFactory.getQuestChainAddress(2)).to.equal(chain0);
+    expect(await chainFactory.getQuestChainAddress(3)).to.equal(chain1);
   });
 });

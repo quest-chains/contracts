@@ -6,6 +6,13 @@ import "../libraries/QuestChainCommons.sol";
 import "./IQuestChainToken.sol";
 
 interface IQuestChain {
+    enum Status {
+        init,
+        review,
+        pass,
+        fail
+    }
+
     event QuestChainInit(string details, string[] quests, bool paused);
     event QuestChainEdited(address editor, string details);
     event QuestsCreated(
@@ -34,24 +41,9 @@ interface IQuestChain {
     event QuestUnpaused(address editor, uint256 questId);
     event QuestChainTokenURIUpdated(string tokenURI);
 
-    enum Status {
-        init,
-        review,
-        pass,
-        fail
-    }
-
-    function questChainFactory() external view returns (IQuestChainFactory);
-
-    function questChainToken() external view returns (IQuestChainToken);
-
-    function questChainId() external view returns (uint256);
-
     function init(QuestChainCommons.QuestChainInfo calldata _info) external;
 
     function setTokenURI(string memory _tokenURI) external;
-
-    function getTokenURI() external view returns (string memory);
 
     function edit(string calldata _details) external;
 
@@ -74,14 +66,22 @@ interface IQuestChain {
         string[] calldata _detailsList
     ) external;
 
-    function questStatus(address _quester, uint256 _questId)
-        external
-        view
-        returns (Status);
-
     function mintToken() external;
 
     function burnToken() external;
 
     function upgrade() external;
+
+    function questChainFactory() external view returns (IQuestChainFactory);
+
+    function questChainToken() external view returns (IQuestChainToken);
+
+    function questChainId() external view returns (uint256);
+
+    function getTokenURI() external view returns (string memory);
+
+    function questStatus(address _quester, uint256 _questId)
+        external
+        view
+        returns (Status);
 }
