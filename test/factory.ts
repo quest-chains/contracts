@@ -4,7 +4,7 @@ import { MockContract } from 'ethereum-waffle';
 import { ethers, waffle } from 'hardhat';
 
 import {
-  IERC20Permit__factory,
+  IERC20__factory,
   QuestChain,
   QuestChainFactory,
   QuestChainToken,
@@ -38,7 +38,7 @@ describe('QuestChainFactory', () => {
     admin = signers[0].address;
     // admin = signers[1].address;
 
-    mockToken = await deployMockContract(signers[0], IERC20Permit__factory.abi);
+    mockToken = await deployMockContract(signers[0], IERC20__factory.abi);
 
     questChainImpl = await deploy<QuestChain>('QuestChain', {});
 

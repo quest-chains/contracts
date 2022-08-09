@@ -1,9 +1,15 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
 import { MockContract } from 'ethereum-waffle';
+import { constants } from 'ethers';
 import { ethers, waffle } from 'hardhat';
 
-import { IERC20__factory, QuestChain, QuestChainFactory } from '../types';
+import {
+  IERC20__factory,
+  QuestChain,
+  QuestChainFactory,
+  QuestChainToken,
+} from '../types';
 import { QuestChainCommons } from '../types/contracts/QuestChain';
 import {
   awaitQuestChainAddress,
@@ -19,6 +25,7 @@ const URI_STRING = 'ipfs://uri';
 
 describe('QuestChain', () => {
   let chain: QuestChain;
+  let chainToken: QuestChainToken;
   let chainFactory: QuestChainFactory;
   let signers: SignerWithAddress[];
   let chainAddress: string;
@@ -73,6 +80,15 @@ describe('QuestChain', () => {
     await expect(tx)
       .to.emit(chain, 'QuestChainInit')
       .withArgs(DETAILS_STRING, [], false);
+
+    chainToken = await getContractAt<QuestChainToken>(
+      'QuestChainToken',
+      await chain.questChainToken(),
+    );
+
+    expect(await chainToken.tokenOwner(await chain.questChainId())).to.equal(
+      chain.address,
+    );
   });
 
   it('Should initialize correctly', async () => {
@@ -824,6 +840,160 @@ describe('QuestChain', () => {
       const tx = chain.connect(signers[3]).submitProofs([2], ['']);
       await expect(tx).to.be.revertedWith(`QuestChain: quest paused`);
       expect(await chain.questPaused(2)).to.equal(true);
+    });
+  });
+
+  const createChain = async (quests: string[]): Promise<QuestChain> => {
+    const info: QuestChainCommons.QuestChainInfoStruct = {
+      details: DETAILS_STRING,
+      tokenURI: URI_STRING,
+      owners: [owner.address],
+      admins: [],
+      editors: [],
+      reviewers: [],
+      quests,
+      paused: false,
+    };
+
+    const tx = await chainFactory.create(
+      info,
+      numberToBytes32((await chainFactory.questChainCount()).toNumber()),
+    );
+
+    return getContractAt<QuestChain>(
+      'QuestChain',
+      await awaitQuestChainAddress(await tx.wait()),
+    );
+  };
+
+  describe('mintToken', async () => {
+    it('should revert mint if there are no quests', async () => {
+      const questChain = await createChain([]);
+      const txPromise = questChain.mintToken();
+      await expect(txPromise).to.be.revertedWith(`QuestChain: no quests found`);
+    });
+    it('should revert mint if there are quests not attempted', async () => {
+      const questChain = await createChain(['1']);
+      const txPromise = questChain.mintToken();
+      await expect(txPromise).to.be.revertedWith(
+        'QuestChain: chain incomplete',
+      );
+    });
+    it('should revert mint if there are quests not reviewed', async () => {
+      const questChain = await createChain(['1']);
+      await (await questChain.submitProofs([0], ['proof'])).wait();
+      const txPromise = questChain.mintToken();
+      await expect(txPromise).to.be.revertedWith(
+        'QuestChain: chain incomplete',
+      );
+    });
+    it('should revert mint if there are quests failed', async () => {
+      const questChain = await createChain(['1']);
+      await (await questChain.submitProofs([0], ['proof'])).wait();
+      await (
+        await questChain.reviewProofs(
+          [owner.address],
+          [0],
+          [false],
+          ['details'],
+        )
+      ).wait();
+      const txPromise = questChain.mintToken();
+      await expect(txPromise).to.be.revertedWith(
+        'QuestChain: chain incomplete',
+      );
+    });
+    it('should mint if completed all quests', async () => {
+      const questChain = await createChain(['1']);
+      await (await questChain.submitProofs([0], ['proof'])).wait();
+      await (
+        await questChain.reviewProofs([owner.address], [0], [true], ['details'])
+      ).wait();
+      const tx = await questChain.mintToken();
+      await tx.wait();
+      const questChainToken = await getContractAt<QuestChainToken>(
+        'QuestChainToken',
+        await questChain.questChainToken(),
+      );
+      await expect(tx)
+        .to.emit(questChainToken, 'TransferSingle')
+        .withArgs(
+          questChain.address,
+          constants.AddressZero,
+          owner.address,
+          await questChain.questChainId(),
+          1,
+        );
+    });
+    it('should revert mint if already minted', async () => {
+      const questChain = await createChain(['1']);
+      await (await questChain.submitProofs([0], ['proof'])).wait();
+      await (
+        await questChain.reviewProofs([owner.address], [0], [true], ['details'])
+      ).wait();
+      const tx = await questChain.mintToken();
+      await tx.wait();
+      const questChainToken = await getContractAt<QuestChainToken>(
+        'QuestChainToken',
+        await questChain.questChainToken(),
+      );
+      await expect(tx)
+        .to.emit(questChainToken, 'TransferSingle')
+        .withArgs(
+          questChain.address,
+          constants.AddressZero,
+          owner.address,
+          await questChain.questChainId(),
+          1,
+        );
+      const txPromise = questChain.mintToken();
+      await expect(txPromise).to.be.revertedWith(
+        'QuestChainToken: already minted',
+      );
+    });
+  });
+
+  describe('burnToken', async () => {
+    it('should revert burn if there is not token', async () => {
+      const questChain = await createChain(['1']);
+      const txPromise = questChain.burnToken();
+      await expect(txPromise).to.be.revertedWith(
+        'QuestChainToken: token not found',
+      );
+    });
+    it('should burn minted token', async () => {
+      const questChain = await createChain(['1']);
+      await (await questChain.submitProofs([0], ['proof'])).wait();
+      await (
+        await questChain.reviewProofs([owner.address], [0], [true], ['details'])
+      ).wait();
+      let tx = await questChain.mintToken();
+      await tx.wait();
+      const questChainToken = await getContractAt<QuestChainToken>(
+        'QuestChainToken',
+        await questChain.questChainToken(),
+      );
+      await expect(tx)
+        .to.emit(questChainToken, 'TransferSingle')
+        .withArgs(
+          questChain.address,
+          constants.AddressZero,
+          owner.address,
+          await questChain.questChainId(),
+          1,
+        );
+
+      tx = await questChain.burnToken();
+      await tx.wait();
+      await expect(tx)
+        .to.emit(questChainToken, 'TransferSingle')
+        .withArgs(
+          questChain.address,
+          owner.address,
+          constants.AddressZero,
+          await questChain.questChainId(),
+          1,
+        );
     });
   });
 });
