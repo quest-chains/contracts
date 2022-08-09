@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
-// solhint-disable max-states-count
 
-pragma solidity 0.8.15;
+pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
