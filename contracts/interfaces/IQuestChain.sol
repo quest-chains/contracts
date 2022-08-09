@@ -37,7 +37,11 @@ interface IQuestChain {
         bool[] successList,
         string[] detailsList
     );
-    event QuestsPaused(address editor, uint256[] questIdList, bool[] pausedList);
+    event QuestsPaused(
+        address editor,
+        uint256[] questIdList,
+        bool[] pausedList
+    );
     event QuestChainTokenURIUpdated(string tokenURI);
 
     function init(QuestChainCommons.QuestChainInfo calldata _info) external;
