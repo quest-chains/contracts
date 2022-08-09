@@ -2,6 +2,7 @@ import { execSync } from 'child_process';
 import fs from 'fs';
 import { ethers, network, run } from 'hardhat';
 
+import { QuestChain, QuestChainFactory } from '../types';
 import {
   DEFAULT_UPGRADE_FEE,
   NETWORK_CURRENCY,
@@ -24,20 +25,20 @@ async function main() {
   console.log('Commit Hash:', commitHash);
 
   const QuestChain = await ethers.getContractFactory('QuestChain', {});
-  const questChain = await QuestChain.deploy();
+  const questChain = (await QuestChain.deploy()) as QuestChain;
   await questChain.deployed();
   console.log('Implementation Address:', questChain.address);
 
   const QuestChainFactory = await ethers.getContractFactory(
     'QuestChainFactory',
   );
-  const questChainFactory = await QuestChainFactory.deploy(
+  const questChainFactory = (await QuestChainFactory.deploy(
     questChain.address,
     address,
     TREASURY_ADDRESS[chainId],
     PAYMENT_TOKEN[chainId],
     DEFAULT_UPGRADE_FEE,
-  );
+  )) as QuestChainFactory;
   await questChainFactory.deployed();
   console.log('Factory Address:', questChainFactory.address);
 
@@ -63,10 +64,13 @@ async function main() {
     return;
   }
 
+  const questChainTokenAddress = await questChainFactory.questChainToken();
+
   const deploymentInfo = {
     network: network.name,
     version: commitHash,
     factory: questChainFactory.address,
+    token: questChainTokenAddress,
     implemention: questChain.address,
     txHash,
     blockNumber: receipt.blockNumber.toString(),
@@ -78,7 +82,8 @@ async function main() {
   );
 
   try {
-    await questChainFactory.deployTransaction.wait(5);
+    console.log('Waiting for contracts to be indexed...');
+    await questChainFactory.deployTransaction.wait(10);
     console.log('Verifying Contracts...');
 
     await run('verify:verify', {
@@ -97,7 +102,14 @@ async function main() {
         DEFAULT_UPGRADE_FEE,
       ],
     });
+
     console.log('Verified Factory');
+
+    await run('verify:verify', {
+      address: questChainTokenAddress,
+      constructorArguments: [],
+    });
+    console.log('Verified Token');
   } catch (err) {
     console.error('Error verifying contracts:', err);
   }

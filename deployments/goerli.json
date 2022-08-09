@@ -1,0 +1,9 @@
+{
+  "network": "goerli",
+  "version": "55b05c6",
+  "factory": "0x7CeCF0a7B6e764d7B8849bD47E1A92c1806B89aC",
+  "token": "0x1984Ec8eFc5A11d3bba5939d2AeA58E0761520c2",
+  "implemention": "0x37Ceee303E485bc23aa1c21aa91D51C1f0030Dae",
+  "txHash": "0x7686b52d93088d8682f99889686816ed7ad9189f63083dd571d0ff499648dee2",
+  "blockNumber": "7373116"
+}

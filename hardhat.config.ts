@@ -37,6 +37,11 @@ const config: HardhatUserConfig = {
     ],
   },
   networks: {
+    goerli: {
+      url: `https://goerli.infura.io/v3/${process.env.INFURA_ID}`,
+      accounts:
+        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    },
     rinkeby: {
       url: `https://rinkeby.infura.io/v3/${process.env.INFURA_ID}`,
       accounts:
@@ -46,6 +51,12 @@ const config: HardhatUserConfig = {
       url: `https://rpc.gnosischain.com`,
       accounts:
         process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+    },
+    sokol: {
+      url: `https://sokol.poa.network`,
+      accounts:
+        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+      gasPrice: 5000000000,
     },
     polygon: {
       url: 'https://rpc-mainnet.maticvigil.com',
@@ -66,9 +77,11 @@ const config: HardhatUserConfig = {
     apiKey: {
       mainnet: process.env.ETHERSCAN_API_KEY!,
       rinkeby: process.env.ETHERSCAN_API_KEY!,
+      goerli: process.env.ETHERSCAN_API_KEY!,
       polygon: process.env.POLYGONSCAN_API_KEY!,
       polygonMumbai: process.env.POLYGONSCAN_API_KEY!,
       xdai: process.env.BLOCKSCOUT_API_KEY!,
+      sokol: process.env.BLOCKSCOUT_API_KEY!,
     },
   },
   typechain: {
