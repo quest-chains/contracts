@@ -19,14 +19,13 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
     using SafeERC20 for IERC20Permit;
 
     uint256 public questChainCount = 0;
-    mapping(uint256 => address) private _questChains;
-
+    uint256 public upgradeFee;
     address public admin;
     address public questChainImpl;
     address public questChainToken;
     address public treasury;
     address public paymentToken;
-    uint256 public upgradeFee;
+    mapping(uint256 => address) private _questChains;
 
     modifier onlyAdmin() {
         require(admin == msg.sender, "QuestChainFactory: not admin");

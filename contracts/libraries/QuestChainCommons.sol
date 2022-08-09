@@ -4,14 +4,14 @@ pragma solidity 0.8.15;
 
 library QuestChainCommons {
     struct QuestChainInfo {
-        string details;
-        string tokenURI;
         address[] owners;
         address[] admins;
         address[] editors;
         address[] reviewers;
         string[] quests;
         bool paused;
+        string details;
+        string tokenURI;
     }
 
     function recoverParameters(bytes memory _signature)

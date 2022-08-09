@@ -17,21 +17,21 @@ contract QuestChain is
     IQuestChain,
     ReentrancyGuard,
     Initializable,
-    AccessControl,
-    Pausable
+    Pausable,
+    AccessControl
 {
     bytes32 public constant OWNER_ROLE = bytes32(0);
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant EDITOR_ROLE = keccak256("EDITOR_ROLE");
     bytes32 public constant REVIEWER_ROLE = keccak256("REVIEWER_ROLE");
 
-    mapping(uint256 => bool) public questPaused;
-    uint256 public questCount;
+    bool public premium;
     IQuestChainFactory public questChainFactory;
     IQuestChainToken public questChainToken;
     uint256 public questChainId;
-    bool public premium;
+    uint256 public questCount;
 
+    mapping(uint256 => bool) public questPaused;
     mapping(address => mapping(uint256 => Status)) private _questStatus;
 
     modifier onlyFactory() {
