@@ -688,18 +688,136 @@ describe('QuestChain', () => {
   });
 
   describe('pause', async () => {
-    // TODO add tests
+    it('should pause the questChain', async () => {
+      expect(await chain.paused()).to.equal(false);
+
+      const tx = await chain.pause();
+      await tx.wait();
+
+      await expect(tx).to.emit(chain, 'Paused');
+
+      expect(await chain.paused()).to.equal(true);
+    });
+
+    it('should revert pause the questChain if not owner', async () => {
+      expect(await chain.paused()).to.equal(true);
+
+      const tx = chain.connect(signers[1]).pause();
+
+      await expect(tx).to.be.revertedWith(
+        `AccessControl: account ${signers[1].address.toLowerCase()} is missing role ${OWNER_ROLE}`,
+      );
+
+      expect(await chain.paused()).to.equal(true);
+    });
+
+    it('should revert submitProofs when paused', async () => {
+      expect(await chain.paused()).to.equal(true);
+
+      const tx = chain.connect(signers[3]).submitProofs([0], ['']);
+
+      await expect(tx).to.be.revertedWith(`Pausable: paused`);
+
+      expect(await chain.paused()).to.equal(true);
+    });
   });
 
   describe('unpause', async () => {
-    // TODO add tests
+    it('should unpause the questChain', async () => {
+      expect(await chain.paused()).to.equal(true);
+
+      const tx = await chain.unpause();
+      await tx.wait();
+
+      await expect(tx).to.emit(chain, 'Unpaused');
+
+      expect(await chain.paused()).to.equal(false);
+    });
+
+    it('should revert unpause the questChain if not owner', async () => {
+      expect(await chain.paused()).to.equal(false);
+
+      const tx = chain.connect(signers[1]).unpause();
+
+      await expect(tx).to.be.revertedWith(
+        `AccessControl: account ${signers[1].address.toLowerCase()} is missing role ${OWNER_ROLE}`,
+      );
+
+      expect(await chain.paused()).to.equal(false);
+    });
+
+    it('should allow submitProofs when unpaused', async () => {
+      expect(await chain.paused()).to.equal(false);
+
+      const tx = await chain.connect(signers[3]).submitProofs([0], ['']);
+      await tx.wait();
+
+      await expect(tx)
+        .to.emit(chain, 'QuestProofsSubmitted')
+        .withArgs(signers[3].address, [0], ['']);
+
+      expect(await chain.paused()).to.equal(false);
+    });
   });
 
-  describe('pauseQuest', async () => {
-    // TODO add tests
-  });
+  describe('pauseQuests', async () => {
+    it('should pause the list of quests', async () => {
+      expect(await chain.questPaused(0)).to.equal(false);
+      expect(await chain.questPaused(1)).to.equal(false);
 
-  describe('unpauseQuest', async () => {
-    // TODO add tests
+      const tx = await chain.pauseQuests([0, 1], [true, true]);
+      await tx.wait();
+
+      await expect(tx)
+        .to.emit(chain, 'QuestsPaused')
+        .withArgs(owner.address, [0, 1], [true, true]);
+
+      expect(await chain.questPaused(0)).to.equal(true);
+      expect(await chain.questPaused(1)).to.equal(true);
+    });
+
+    it('should unpause/pause the list of quests', async () => {
+      expect(await chain.questPaused(0)).to.equal(true);
+      expect(await chain.questPaused(1)).to.equal(true);
+      expect(await chain.questPaused(2)).to.equal(false);
+
+      const tx = await chain.pauseQuests([0, 1, 2], [false, false, true]);
+      await tx.wait();
+
+      await expect(tx)
+        .to.emit(chain, 'QuestsPaused')
+        .withArgs(owner.address, [0, 1, 2], [false, false, true]);
+
+      expect(await chain.questPaused(0)).to.equal(false);
+      expect(await chain.questPaused(1)).to.equal(false);
+      expect(await chain.questPaused(2)).to.equal(true);
+    });
+
+    it('should revert unpause quest if unpaused', async () => {
+      const tx = chain.pauseQuests([0], [false]);
+
+      await expect(tx).to.be.revertedWith(`QuestChain: quest not paused`);
+    });
+
+    it('should revert pause quest if paused', async () => {
+      const tx = chain.pauseQuests([2], [true]);
+
+      await expect(tx).to.be.revertedWith(`QuestChain: quest paused`);
+    });
+
+    it('should revert pause quest if not owner', async () => {
+      const tx = chain.connect(signers[5]).pauseQuests([0], [true]);
+
+      await expect(tx).to.be.revertedWith(
+        `AccessControl: account ${signers[5].address.toLowerCase()} is missing role ${EDITOR_ROLE}`,
+      );
+    });
+
+    it('should revert submitProofs when paused', async () => {
+      expect(await chain.questPaused(2)).to.equal(true);
+      const tx = chain.connect(signers[3]).submitProofs([2], ['']);
+      await expect(tx).to.be.revertedWith(`QuestChain: quest paused`);
+      expect(await chain.questPaused(2)).to.equal(true);
+    });
   });
 });

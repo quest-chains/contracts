@@ -115,26 +115,6 @@ contract QuestChain is
         _unpause();
     }
 
-    function pauseQuest(uint256 _questId)
-        external
-        onlyRole(EDITOR_ROLE)
-        validQuest(_questId)
-        whenQuestNotPaused(_questId)
-    {
-        questPaused[_questId] = true;
-        emit QuestPaused(_msgSender(), _questId);
-    }
-
-    function unpauseQuest(uint256 _questId)
-        external
-        onlyRole(EDITOR_ROLE)
-        validQuest(_questId)
-        whenQuestPaused(_questId)
-    {
-        questPaused[_questId] = true;
-        emit QuestUnpaused(_msgSender(), _questId);
-    }
-
     function edit(string calldata _details) external onlyRole(ADMIN_ROLE) {
         emit QuestChainEdited(_msgSender(), _details);
     }
@@ -147,8 +127,11 @@ contract QuestChain is
         uint256 _questCount = questCount;
         uint256[] memory _questIdList = new uint256[](_loopLength);
 
-        for (uint256 i; i < _loopLength; i++) {
+        for (uint256 i; i < _loopLength; ) {
             _questIdList[i] = _questCount + i;
+            unchecked {
+                ++i;
+            }
         }
 
         questCount += _detailsList.length;
@@ -167,14 +150,39 @@ contract QuestChain is
             "QuestChain: invalid params"
         );
 
-        for (uint256 i; i < _loopLength; i++) {
+        for (uint256 i; i < _loopLength; ) {
             require(
                 _questIdList[i] < questCount,
                 "QuestChain: quest not found"
             );
+            unchecked {
+                ++i;
+            }
         }
 
         emit QuestsEdited(_msgSender(), _questIdList, _detailsList);
+    }
+
+    function pauseQuests(
+        uint256[] calldata _questIdList,
+        bool[] calldata _pausedList
+    ) external onlyRole(EDITOR_ROLE) {
+        uint256 _loopLength = _questIdList.length;
+        require(
+            _loopLength == _pausedList.length,
+            "QuestChain: invalid params"
+        );
+        for (uint256 i; i < _loopLength; ) {
+            if (_pausedList[i]) {
+                _pauseQuest(_questIdList[i]);
+            } else {
+                _unpauseQuest(_questIdList[i]);
+            }
+            unchecked {
+                ++i;
+            }
+        }
+        emit QuestsPaused(_msgSender(), _questIdList, _pausedList);
     }
 
     function submitProofs(
@@ -185,8 +193,11 @@ contract QuestChain is
 
         require(_loopLength == _proofList.length, "QuestChain: invalid params");
 
-        for (uint256 i; i < _loopLength; i++) {
+        for (uint256 i; i < _loopLength; ) {
             _submitProof(_questIdList[i]);
+            unchecked {
+                ++i;
+            }
         }
 
         emit QuestProofsSubmitted(_msgSender(), _questIdList, _proofList);
@@ -207,8 +218,11 @@ contract QuestChain is
             "QuestChain: invalid params"
         );
 
-        for (uint256 i; i < _loopLength; i++) {
+        for (uint256 i; i < _loopLength; ) {
             _reviewProof(_questerList[i], _questIdList[i], _successList[i]);
+            unchecked {
+                ++i;
+            }
         }
 
         emit QuestProofsReviewed(
@@ -323,5 +337,21 @@ contract QuestChain is
     function _setTokenURI(string memory _tokenURI) internal {
         questChainToken.setTokenURI(questChainId, _tokenURI);
         emit QuestChainTokenURIUpdated(_tokenURI);
+    }
+
+    function _pauseQuest(uint256 _questId)
+        internal
+        validQuest(_questId)
+        whenQuestNotPaused(_questId)
+    {
+        questPaused[_questId] = true;
+    }
+
+    function _unpauseQuest(uint256 _questId)
+        internal
+        validQuest(_questId)
+        whenQuestPaused(_questId)
+    {
+        questPaused[_questId] = false;
     }
 }

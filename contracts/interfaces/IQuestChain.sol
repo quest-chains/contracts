@@ -37,8 +37,7 @@ interface IQuestChain {
         bool[] successList,
         string[] detailsList
     );
-    event QuestPaused(address editor, uint256 questId);
-    event QuestUnpaused(address editor, uint256 questId);
+    event QuestsPaused(address editor, uint256[] questIdList, bool[] pausedList);
     event QuestChainTokenURIUpdated(string tokenURI);
 
     function init(QuestChainCommons.QuestChainInfo calldata _info) external;
@@ -50,8 +49,13 @@ interface IQuestChain {
     function createQuests(string[] calldata _detailsList) external;
 
     function editQuests(
-        uint256[] calldata _questIdList,
-        string[] calldata _detailsList
+        uint256[] calldata _questidlist,
+        string[] calldata _detailslist
+    ) external;
+
+    function pauseQuests(
+        uint256[] calldata _questidlist,
+        bool[] calldata _pausedlist
     ) external;
 
     function submitProofs(
