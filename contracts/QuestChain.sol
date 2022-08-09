@@ -107,11 +107,11 @@ contract QuestChain is
         emit QuestChainInit(_info.details, _info.quests, _info.paused);
     }
 
-    function pause() external onlyRole(OWNER_ROLE) {
+    function pause() external onlyRole(ADMIN_ROLE) {
         _pause();
     }
 
-    function unpause() external onlyRole(OWNER_ROLE) {
+    function unpause() external onlyRole(ADMIN_ROLE) {
         _unpause();
     }
 
@@ -236,7 +236,7 @@ contract QuestChain is
 
     function setTokenURI(string memory _tokenURI)
         external
-        onlyRole(OWNER_ROLE)
+        onlyRole(ADMIN_ROLE)
         onlyPremium
     {
         _setTokenURI(_tokenURI);

@@ -699,13 +699,13 @@ describe('QuestChain', () => {
       expect(await chain.paused()).to.equal(true);
     });
 
-    it('should revert pause the questChain if not owner', async () => {
+    it('should revert pause the questChain if not admin', async () => {
       expect(await chain.paused()).to.equal(true);
 
-      const tx = chain.connect(signers[1]).pause();
+      const tx = chain.connect(signers[5]).pause();
 
       await expect(tx).to.be.revertedWith(
-        `AccessControl: account ${signers[1].address.toLowerCase()} is missing role ${OWNER_ROLE}`,
+        `AccessControl: account ${signers[5].address.toLowerCase()} is missing role ${ADMIN_ROLE}`,
       );
 
       expect(await chain.paused()).to.equal(true);
@@ -734,13 +734,13 @@ describe('QuestChain', () => {
       expect(await chain.paused()).to.equal(false);
     });
 
-    it('should revert unpause the questChain if not owner', async () => {
+    it('should revert unpause the questChain if not admin', async () => {
       expect(await chain.paused()).to.equal(false);
 
-      const tx = chain.connect(signers[1]).unpause();
+      const tx = chain.connect(signers[5]).unpause();
 
       await expect(tx).to.be.revertedWith(
-        `AccessControl: account ${signers[1].address.toLowerCase()} is missing role ${OWNER_ROLE}`,
+        `AccessControl: account ${signers[5].address.toLowerCase()} is missing role ${ADMIN_ROLE}`,
       );
 
       expect(await chain.paused()).to.equal(false);
@@ -811,6 +811,12 @@ describe('QuestChain', () => {
       await expect(tx).to.be.revertedWith(
         `AccessControl: account ${signers[5].address.toLowerCase()} is missing role ${EDITOR_ROLE}`,
       );
+    });
+
+    it('should revert pause quest if invalid params', async () => {
+      const tx = chain.pauseQuests([0], []);
+
+      await expect(tx).to.be.revertedWith('QuestChain: invalid params');
     });
 
     it('should revert submitProofs when paused', async () => {
