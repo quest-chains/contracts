@@ -2,7 +2,6 @@
 
 pragma solidity 0.8.16;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
@@ -11,7 +10,7 @@ import "./interfaces/IQuestChainToken.sol";
 
 // author: @dan13ram
 
-contract QuestChainToken is IQuestChainToken, ERC1155, Ownable {
+contract QuestChainToken is IQuestChainToken, ERC1155 {
     IQuestChainFactory public questChainFactory;
 
     mapping(uint256 => string) private _tokenURIs;
