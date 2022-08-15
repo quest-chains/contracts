@@ -77,6 +77,7 @@ contract QuestChain is
         _setRoleAdmin(REVIEWER_ROLE, ADMIN_ROLE);
 
         _setTokenURI(_info.tokenURI);
+        require(_info.owners.length > 0, "QuestChain: no owners");
 
         for (uint256 i = 0; i < _info.owners.length; i = i + 1) {
             _grantRole(OWNER_ROLE, _info.owners[i]);

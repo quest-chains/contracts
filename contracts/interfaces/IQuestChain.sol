@@ -20,6 +20,11 @@ interface IQuestChain {
         uint256[] questIdList,
         string[] detailsList
     );
+    event QuestsPaused(
+        address editor,
+        uint256[] questIdList,
+        bool[] pausedList
+    );
     event QuestsEdited(
         address editor,
         uint256[] questIdList,
@@ -36,11 +41,6 @@ interface IQuestChain {
         uint256[] questIdList,
         bool[] successList,
         string[] detailsList
-    );
-    event QuestsPaused(
-        address editor,
-        uint256[] questIdList,
-        bool[] pausedList
     );
     event QuestChainTokenURIUpdated(string tokenURI);
 
