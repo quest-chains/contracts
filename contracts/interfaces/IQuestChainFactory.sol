@@ -5,6 +5,7 @@ pragma solidity 0.8.16;
 import "../libraries/QuestChainCommons.sol";
 
 interface IQuestChainFactory {
+    event FactoryInit();
     event QuestChainCreated(uint256 index, address questChain);
     event AdminReplaced(address admin);
     event ImplReplaced(address impl);
