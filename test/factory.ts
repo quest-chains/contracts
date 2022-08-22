@@ -1,13 +1,23 @@
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { expect } from 'chai';
-import { ethers } from 'hardhat';
+import { MockContract } from 'ethereum-waffle';
+import { ethers, waffle } from 'hardhat';
 
-import { QuestChain, QuestChainFactory } from '../types';
-import { awaitQuestChainAddress, deploy, getContractAt } from './utils/helpers';
+import {
+  IERC20__factory,
+  QuestChain,
+  QuestChainFactory,
+  QuestChainToken,
+} from '../types';
+import { QuestChainCommons } from '../types/contracts/QuestChainFactory';
+import {
+  awaitQuestChainAddress,
+  deploy,
+  getContractAt,
+  numberToBytes32,
+} from './utils/helpers';
 
-const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
-const ZERO_BYTES32 =
-  '0x0000000000000000000000000000000000000000000000000000000000000000';
+const { deployMockContract } = waffle;
 const DETAILS_STRING = 'ipfs://details';
 const URI_STRING = 'ipfs://uri';
 
@@ -16,82 +26,108 @@ describe('QuestChainFactory', () => {
   let chainFactory: QuestChainFactory;
   let signers: SignerWithAddress[];
   let chainAddress: string;
-  let OWNER_ROLE: string;
+  let DEFAULT_ADMIN_ROLE: string;
   let ADMIN_ROLE: string;
   let EDITOR_ROLE: string;
   let REVIEWER_ROLE: string;
-  let owner: string;
+  let admin: string;
+  let mockToken: MockContract;
 
   before(async () => {
     signers = await ethers.getSigners();
-    owner = signers[0].address;
+    admin = signers[0].address;
+    // admin = signers[1].address;
+
+    mockToken = await deployMockContract(signers[0], IERC20__factory.abi);
 
     questChainImpl = await deploy<QuestChain>('QuestChain', {});
 
-    [OWNER_ROLE, ADMIN_ROLE, EDITOR_ROLE, REVIEWER_ROLE] = await Promise.all([
-      questChainImpl.OWNER_ROLE(),
-      questChainImpl.ADMIN_ROLE(),
-      questChainImpl.EDITOR_ROLE(),
-      questChainImpl.REVIEWER_ROLE(),
-    ]);
+    [DEFAULT_ADMIN_ROLE, ADMIN_ROLE, EDITOR_ROLE, REVIEWER_ROLE] =
+      await Promise.all([
+        questChainImpl.DEFAULT_ADMIN_ROLE(),
+        questChainImpl.ADMIN_ROLE(),
+        questChainImpl.EDITOR_ROLE(),
+        questChainImpl.REVIEWER_ROLE(),
+      ]);
 
-    const QuestChainFactoryFactory = await ethers.getContractFactory(
+    chainFactory = await deploy<QuestChainFactory>(
       'QuestChainFactory',
+      {},
+      questChainImpl.address,
+      admin,
+      admin,
+      mockToken.address,
+      10,
     );
 
-    chainFactory = (await QuestChainFactoryFactory.deploy(
-      questChainImpl.address,
-    )) as QuestChainFactory;
+    await expect(chainFactory.deployTransaction).to.emit(
+      chainFactory,
+      'FactoryInit',
+    );
 
-    await chainFactory.deployed();
-
-    await expect(chainFactory.deployTransaction)
-      .to.emit(chainFactory, 'QuestChainImplUpdated')
-      .withArgs(ZERO_ADDRESS, questChainImpl.address);
-
-    expect(OWNER_ROLE).to.equal(ZERO_BYTES32);
+    expect(DEFAULT_ADMIN_ROLE).to.equal(numberToBytes32(0));
   });
 
   it('Should be initialized properly', async () => {
     expect(await chainFactory.questChainCount()).to.equal(0);
-    expect(await chainFactory.owner()).to.equal(owner);
+    expect(await chainFactory.admin()).to.equal(admin);
     expect(await chainFactory.questChainImpl()).to.equal(
       questChainImpl.address,
     );
   });
 
   it('Should revert change questChainImpl if zero address', async () => {
-    const tx = chainFactory.updateChainImpl(ZERO_ADDRESS);
-    await expect(tx).to.revertedWith('QuestChainFactory: invalid impl');
+    const tx = chainFactory.replaceChainImpl(ethers.constants.AddressZero);
+    await expect(tx).to.revertedWith('QuestChainFactory: 0 address');
   });
 
-  it('Should revert change questChainImpl if not owner', async () => {
+  it('Should revert change questChainImpl if not admin', async () => {
     const newQuestChain = await deploy<QuestChain>('QuestChain', {});
     const tx = chainFactory
       .connect(signers[1])
-      .updateChainImpl(newQuestChain.address);
-    await expect(tx).to.revertedWith('Ownable: caller is not the owner');
+      .replaceChainImpl(newQuestChain.address);
+    await expect(tx).to.revertedWith('QuestChainFactory: not admin');
   });
 
   it('Should change questChainImpl', async () => {
     const newQuestChain = await deploy<QuestChain>('QuestChain', {});
-    const tx = await chainFactory.updateChainImpl(newQuestChain.address);
+    const tx = await chainFactory.replaceChainImpl(newQuestChain.address);
     await tx.wait();
     await expect(tx)
-      .to.emit(chainFactory, 'QuestChainImplUpdated')
-      .withArgs(questChainImpl.address, newQuestChain.address);
+      .to.emit(chainFactory, 'ImplReplaced')
+      .withArgs(newQuestChain.address);
     expect(await chainFactory.questChainImpl()).to.equal(newQuestChain.address);
   });
 
   it('Should revert init for questChainImpl', async () => {
-    const tx = questChainImpl.init(owner, DETAILS_STRING, URI_STRING);
+    const info: QuestChainCommons.QuestChainInfoStruct = {
+      details: DETAILS_STRING,
+      tokenURI: URI_STRING,
+      owners: [admin],
+      admins: [],
+      editors: [],
+      reviewers: [],
+      quests: [],
+      paused: false,
+    };
+    const tx = questChainImpl.init(info);
     await expect(tx).to.revertedWith(
       'Initializable: contract is already initialized',
     );
   });
 
   it('Should deploy a QuestChain', async () => {
-    const tx = await chainFactory.create(DETAILS_STRING, URI_STRING);
+    const info: QuestChainCommons.QuestChainInfoStruct = {
+      details: DETAILS_STRING,
+      tokenURI: URI_STRING,
+      owners: [admin],
+      admins: [],
+      editors: [],
+      reviewers: [],
+      quests: [],
+      paused: false,
+    };
+    const tx = await chainFactory.create(info, numberToBytes32(0));
     chainAddress = await awaitQuestChainAddress(await tx.wait());
     await expect(tx)
       .to.emit(chainFactory, 'QuestChainCreated')
@@ -99,16 +135,18 @@ describe('QuestChainFactory', () => {
 
     const chain = await getContractAt<QuestChain>('QuestChain', chainAddress);
     await expect(tx)
-      .to.emit(chain, 'QuestChainCreated')
-      .withArgs(owner, DETAILS_STRING);
+      .to.emit(chain, 'QuestChainInit')
+      .withArgs(DETAILS_STRING, [], false);
 
-    expect(await chain.hasRole(OWNER_ROLE, owner)).to.equal(true);
-    expect(await chain.hasRole(ADMIN_ROLE, owner)).to.equal(true);
-    expect(await chain.hasRole(EDITOR_ROLE, owner)).to.equal(true);
-    expect(await chain.hasRole(REVIEWER_ROLE, owner)).to.equal(true);
+    expect(await chain.hasRole(DEFAULT_ADMIN_ROLE, admin)).to.equal(true);
+    expect(await chain.hasRole(ADMIN_ROLE, admin)).to.equal(true);
+    expect(await chain.hasRole(EDITOR_ROLE, admin)).to.equal(true);
+    expect(await chain.hasRole(REVIEWER_ROLE, admin)).to.equal(true);
 
-    expect(await chain.getRoleAdmin(OWNER_ROLE)).to.equal(OWNER_ROLE);
-    expect(await chain.getRoleAdmin(ADMIN_ROLE)).to.equal(OWNER_ROLE);
+    expect(await chain.getRoleAdmin(DEFAULT_ADMIN_ROLE)).to.equal(
+      DEFAULT_ADMIN_ROLE,
+    );
+    expect(await chain.getRoleAdmin(ADMIN_ROLE)).to.equal(DEFAULT_ADMIN_ROLE);
     expect(await chain.getRoleAdmin(EDITOR_ROLE)).to.equal(ADMIN_ROLE);
     expect(await chain.getRoleAdmin(REVIEWER_ROLE)).to.equal(ADMIN_ROLE);
 
@@ -116,16 +154,21 @@ describe('QuestChainFactory', () => {
   });
 
   it('Should deploy a QuestChain with roles', async () => {
+    const owners = [admin, signers[5].address];
     const admins = [signers[1].address, signers[2].address];
     const editors = [signers[2].address, signers[3].address];
     const reviewers = [signers[3].address, signers[4].address];
-    const tx = await chainFactory.createWithRoles(
-      DETAILS_STRING,
-      URI_STRING,
+    const info: QuestChainCommons.QuestChainInfoStruct = {
+      details: DETAILS_STRING,
+      tokenURI: URI_STRING,
+      owners,
       admins,
       editors,
       reviewers,
-    );
+      quests: [],
+      paused: false,
+    };
+    const tx = await chainFactory.create(info, numberToBytes32(1));
     chainAddress = await awaitQuestChainAddress(await tx.wait());
     await expect(tx)
       .to.emit(chainFactory, 'QuestChainCreated')
@@ -133,12 +176,27 @@ describe('QuestChainFactory', () => {
 
     const chain = await getContractAt<QuestChain>('QuestChain', chainAddress);
     await expect(tx)
-      .to.emit(chain, 'QuestChainCreated')
-      .withArgs(owner, DETAILS_STRING);
+      .to.emit(chain, 'QuestChainInit')
+      .withArgs(DETAILS_STRING, [], false);
 
+    await Promise.all(
+      owners.map(async owner =>
+        expect(await chain.hasRole(DEFAULT_ADMIN_ROLE, owner)).to.equal(true),
+      ),
+    );
+    await Promise.all(
+      owners.map(async owner =>
+        expect(await chain.hasRole(ADMIN_ROLE, owner)).to.equal(true),
+      ),
+    );
     await Promise.all(
       admins.map(async admin =>
         expect(await chain.hasRole(ADMIN_ROLE, admin)).to.equal(true),
+      ),
+    );
+    await Promise.all(
+      owners.map(async owner =>
+        expect(await chain.hasRole(EDITOR_ROLE, owner)).to.equal(true),
       ),
     );
     await Promise.all(
@@ -149,6 +207,11 @@ describe('QuestChainFactory', () => {
     await Promise.all(
       editors.map(async editor =>
         expect(await chain.hasRole(EDITOR_ROLE, editor)).to.equal(true),
+      ),
+    );
+    await Promise.all(
+      owners.map(async owner =>
+        expect(await chain.hasRole(REVIEWER_ROLE, owner)).to.equal(true),
       ),
     );
     await Promise.all(
@@ -170,38 +233,144 @@ describe('QuestChainFactory', () => {
     expect(await chainFactory.getQuestChainAddress(1)).to.equal(chainAddress);
   });
 
-  it('Should predict QuestChain address', async () => {
-    owner = signers[0].address;
+  it('Should update questChainCount', async () => {
+    expect(await chainFactory.questChainCount()).to.equal(2);
+    const info: QuestChainCommons.QuestChainInfoStruct = {
+      details: DETAILS_STRING,
+      tokenURI: URI_STRING,
+      owners: [admin],
+      admins: [],
+      editors: [],
+      reviewers: [],
+      quests: [],
+      paused: false,
+    };
 
-    const predictedAddress = await chainFactory.predictDeterministicAddress(
-      ZERO_BYTES32,
-    );
+    let tx = await chainFactory.create(info, numberToBytes32(2));
+    const chain0 = await awaitQuestChainAddress(await tx.wait());
+    expect(await chainFactory.questChainCount()).to.equal(3);
+    tx = await chainFactory.create(info, numberToBytes32(3));
+    const chain1 = await awaitQuestChainAddress(await tx.wait());
+    expect(await chainFactory.questChainCount()).to.equal(4);
 
-    const tx = await chainFactory.createDeterministic(
-      DETAILS_STRING,
-      URI_STRING,
-      ZERO_BYTES32,
-    );
-
-    chainAddress = await awaitQuestChainAddress(await tx.wait());
-    await expect(tx)
-      .to.emit(chainFactory, 'QuestChainCreated')
-      .withArgs(2, chainAddress);
-
-    expect(chainAddress).to.equal(predictedAddress);
-    expect(await chainFactory.getQuestChainAddress(2)).to.equal(chainAddress);
+    expect(await chainFactory.getQuestChainAddress(2)).to.equal(chain0);
+    expect(await chainFactory.getQuestChainAddress(3)).to.equal(chain1);
   });
 
-  it('Should update questChainCount', async () => {
-    expect(await chainFactory.questChainCount()).to.equal(3);
-    let tx = await chainFactory.create(DETAILS_STRING, URI_STRING);
-    const chain0 = await awaitQuestChainAddress(await tx.wait());
+  it('Should create quests & paused', async () => {
     expect(await chainFactory.questChainCount()).to.equal(4);
-    tx = await chainFactory.create(DETAILS_STRING, URI_STRING);
-    const chain1 = await awaitQuestChainAddress(await tx.wait());
+    const info: QuestChainCommons.QuestChainInfoStruct = {
+      details: DETAILS_STRING,
+      tokenURI: URI_STRING,
+      owners: [admin],
+      admins: [],
+      editors: [],
+      reviewers: [],
+      quests: ['1', '2', '3'],
+      paused: true,
+    };
+
+    const tx = await chainFactory.create(info, numberToBytes32(4));
+
+    const chainAddress = await awaitQuestChainAddress(await tx.wait());
+
     expect(await chainFactory.questChainCount()).to.equal(5);
 
-    expect(await chainFactory.getQuestChainAddress(3)).to.equal(chain0);
-    expect(await chainFactory.getQuestChainAddress(4)).to.equal(chain1);
+    const chain = await getContractAt<QuestChain>('QuestChain', chainAddress);
+
+    await expect(tx)
+      .to.emit(chain, 'QuestChainInit')
+      .withArgs(DETAILS_STRING, ['1', '2', '3'], true);
+
+    expect(await chain.paused()).to.equal(true);
+    expect(await chain.questCount()).to.equal(3);
+  });
+
+  describe('upgradeQuestChain', async () => {
+    let chain: QuestChain;
+    const NEW_TOKEN_URI = 'ipfs://new-uri';
+    it('Should create quest chain', async () => {
+      expect(await chainFactory.questChainCount()).to.equal(5);
+      const info: QuestChainCommons.QuestChainInfoStruct = {
+        details: DETAILS_STRING,
+        tokenURI: URI_STRING,
+        owners: [admin],
+        admins: [],
+        editors: [],
+        reviewers: [],
+        quests: ['1', '2', '3', '4'],
+        paused: true,
+      };
+
+      let tx = await chainFactory.create(info, numberToBytes32(5));
+
+      const chainAddress = await awaitQuestChainAddress(await tx.wait());
+
+      expect(await chainFactory.questChainCount()).to.equal(6);
+
+      chain = await getContractAt<QuestChain>('QuestChain', chainAddress);
+
+      await expect(tx)
+        .to.emit(chain, 'QuestChainInit')
+        .withArgs(DETAILS_STRING, ['1', '2', '3', '4'], true);
+
+      expect(await chain.paused()).to.equal(true);
+      expect(await chain.questCount()).to.equal(4);
+
+      expect(await chain.getTokenURI()).to.equal(URI_STRING);
+      expect(await chain.premium()).to.equal(false);
+    });
+
+    it('should revert setTokenURI when not premium', async () => {
+      const txPromise = chain.setTokenURI(NEW_TOKEN_URI);
+      await expect(txPromise).to.be.revertedWith('QuestChain: not premium');
+    });
+
+    it('should revert upgrade quest chain if not factory', async () => {
+      const txPromise = chain.upgrade();
+      await expect(txPromise).to.be.revertedWith(`QuestChain: not factory`);
+    });
+
+    it('should upgrade quest chain to premium', async () => {
+      await mockToken.mock.transferFrom
+        .withArgs(admin, admin, 10)
+        .returns(true);
+      1;
+      const tx = await chainFactory.upgradeQuestChain(chain.address);
+      await tx.wait();
+      await expect(tx)
+        .to.emit(chainFactory, 'QuestChainUpgraded')
+        .withArgs(admin, chain.address);
+
+      expect(await chain.premium()).to.equal(true);
+    });
+
+    it('should revert upgrade quest chain if premium', async () => {
+      const txPromise = chainFactory.upgradeQuestChain(chain.address);
+      await expect(txPromise).to.be.revertedWith(
+        `QuestChain: already upgraded`,
+      );
+    });
+
+    it('should revert setTokenURI if not admin', async () => {
+      const txPromise = chain.connect(signers[2]).setTokenURI(NEW_TOKEN_URI);
+      await expect(txPromise).to.be.revertedWith(
+        `AccessControl: account ${signers[2].address.toLowerCase()} is missing role ${ADMIN_ROLE}`,
+      );
+    });
+
+    it('should setTokenURI if admin & premium', async () => {
+      const questChainToken = await getContractAt<QuestChainToken>(
+        'QuestChainToken',
+        await chain.questChainToken(),
+      );
+
+      const tx = await chain.setTokenURI(NEW_TOKEN_URI);
+      await tx.wait();
+      await expect(tx)
+        .to.emit(questChainToken, 'URI')
+        .withArgs(NEW_TOKEN_URI, await chain.questChainId());
+      expect(await chain.getTokenURI()).to.equal(NEW_TOKEN_URI);
+    });
   });
 });

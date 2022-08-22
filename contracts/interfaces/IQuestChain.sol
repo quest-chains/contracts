@@ -1,38 +1,11 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: AGPL-3.0-only
 
-pragma solidity ^0.8.11;
+pragma solidity 0.8.16;
 
+import "../libraries/QuestChainCommons.sol";
 import "./IQuestChainToken.sol";
 
 interface IQuestChain {
-    event QuestChainCreated(address indexed creator, string details);
-    event QuestChainEdited(address indexed editor, string details);
-    event QuestsCreated(
-        address indexed creator,
-        uint256[] questIdList,
-        string[] detailsList
-    );
-    event QuestsEdited(
-        address indexed editor,
-        uint256[] questIdList,
-        string[] detailsList
-    );
-    event QuestProofsSubmitted(
-        address indexed quester,
-        uint256[] questIdList,
-        string[] proofList
-    );
-    event QuestProofsReviewed(
-        address indexed reviewer,
-        address[] questerList,
-        uint256[] questIdList,
-        bool[] successList,
-        string[] detailsList
-    );
-    event QuestPaused(address indexed editor, uint256 indexed questId);
-    event QuestUnpaused(address indexed editor, uint256 indexed questId);
-    event QuestChainTokenURIUpdated(string tokenURI);
-
     enum Status {
         init,
         review,
@@ -40,38 +13,53 @@ interface IQuestChain {
         fail
     }
 
-    function questChainFactory() external view returns (IQuestChainFactory);
+    event QuestChainInit(string details, string[] quests, bool paused);
+    event QuestChainEdited(address editor, string details);
+    event QuestsCreated(
+        address creator,
+        uint256[] questIdList,
+        string[] detailsList
+    );
+    event QuestsPaused(
+        address editor,
+        uint256[] questIdList,
+        bool[] pausedList
+    );
+    event QuestsEdited(
+        address editor,
+        uint256[] questIdList,
+        string[] detailsList
+    );
+    event QuestProofsSubmitted(
+        address quester,
+        uint256[] questIdList,
+        string[] proofList
+    );
+    event QuestProofsReviewed(
+        address reviewer,
+        address[] questerList,
+        uint256[] questIdList,
+        bool[] successList,
+        string[] detailsList
+    );
+    event QuestChainTokenURIUpdated(string tokenURI);
 
-    function questChainToken() external view returns (IQuestChainToken);
-
-    function questChainId() external view returns (uint256);
-
-    function init(
-        address _owner,
-        string calldata _details,
-        string memory _tokenURI
-    ) external;
-
-    function initWithRoles(
-        address _owner,
-        string calldata _details,
-        string memory _tokenURI,
-        address[] calldata _admins,
-        address[] calldata _editors,
-        address[] calldata _reviewers
-    ) external;
+    function init(QuestChainCommons.QuestChainInfo calldata _info) external;
 
     function setTokenURI(string memory _tokenURI) external;
-
-    function getTokenURI() external view returns (string memory);
 
     function edit(string calldata _details) external;
 
     function createQuests(string[] calldata _detailsList) external;
 
     function editQuests(
-        uint256[] calldata _questIdList,
-        string[] calldata _detailsList
+        uint256[] calldata _questidlist,
+        string[] calldata _detailslist
+    ) external;
+
+    function pauseQuests(
+        uint256[] calldata _questidlist,
+        bool[] calldata _pausedlist
     ) external;
 
     function submitProofs(
@@ -86,12 +74,22 @@ interface IQuestChain {
         string[] calldata _detailsList
     ) external;
 
+    function mintToken() external;
+
+    function burnToken() external;
+
+    function upgrade() external;
+
+    function questChainFactory() external view returns (IQuestChainFactory);
+
+    function questChainToken() external view returns (IQuestChainToken);
+
+    function questChainId() external view returns (uint256);
+
+    function getTokenURI() external view returns (string memory);
+
     function questStatus(address _quester, uint256 _questId)
         external
         view
         returns (Status);
-
-    function mintToken(address _quester) external;
-
-    function burnToken(address _quester) external;
 }

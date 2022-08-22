@@ -1,13 +1,48 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: AGPL-3.0-only
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.16;
+
+import "../libraries/QuestChainCommons.sol";
 
 interface IQuestChainFactory {
-    event QuestChainCreated(uint256 indexed index, address questChain);
-    event QuestChainImplUpdated(
-        address indexed oldImpl,
-        address indexed newImpl
-    );
+    event FactoryInit();
+    event QuestChainCreated(uint256 index, address questChain);
+    event AdminReplaced(address admin);
+    event ImplReplaced(address impl);
+    event TreasuryReplaced(address treasury);
+    event PaymentTokenReplaced(address paymentToken);
+    event UpgradeFeeReplaced(uint256 upgradeFee);
+    event QuestChainUpgraded(address sender, address questChain);
+
+    function create(
+        QuestChainCommons.QuestChainInfo calldata _info,
+        bytes32 _salt
+    ) external returns (address);
+
+    function createAndUpgrade(
+        QuestChainCommons.QuestChainInfo calldata _info,
+        bytes32 _salt
+    ) external returns (address);
+
+    function createAndUpgradeWithPermit(
+        QuestChainCommons.QuestChainInfo calldata _info,
+        bytes32 _salt,
+        uint256 _deadline,
+        bytes calldata _signature
+    ) external returns (address);
+
+    function upgradeQuestChain(address _questChainAddress) external;
+
+    function upgradeQuestChainWithPermit(
+        address _questChainAddress,
+        uint256 _deadline,
+        bytes calldata _signature
+    ) external;
+
+    function getQuestChainAddress(uint256 _index)
+        external
+        view
+        returns (address);
 
     function questChainCount() external view returns (uint256);
 
@@ -15,39 +50,11 @@ interface IQuestChainFactory {
 
     function questChainToken() external view returns (address);
 
-    function create(string calldata _details, string memory _tokenURI)
-        external
-        returns (address);
+    function admin() external view returns (address);
 
-    function createWithRoles(
-        string calldata _details,
-        string memory _tokenURI,
-        address[] calldata _admins,
-        address[] calldata _editors,
-        address[] calldata _reviewers
-    ) external returns (address);
+    function treasury() external view returns (address);
 
-    function createDeterministic(
-        string calldata _details,
-        string memory _tokenURI,
-        bytes32 _salt
-    ) external returns (address);
+    function paymentToken() external view returns (address);
 
-    function createDeterministicWithRoles(
-        string calldata _details,
-        string memory _tokenURI,
-        address[] calldata _admins,
-        address[] calldata _editors,
-        address[] calldata _reviewers,
-        bytes32 _salt
-    ) external returns (address);
-
-    function predictDeterministicAddress(bytes32 _salt)
-        external
-        returns (address);
-
-    function getQuestChainAddress(uint256 _index)
-        external
-        view
-        returns (address);
+    function upgradeFee() external view returns (uint256);
 }

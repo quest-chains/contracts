@@ -1,8 +1,7 @@
-// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: AGPL-3.0-only
 
-pragma solidity ^0.8.0;
+pragma solidity 0.8.16;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 
@@ -11,16 +10,12 @@ import "./interfaces/IQuestChainToken.sol";
 
 // author: @dan13ram
 
-contract QuestChainToken is IQuestChainToken, ERC1155, Ownable {
-    IQuestChainFactory public override questChainFactory;
+contract QuestChainToken is IQuestChainToken, ERC1155 {
+    IQuestChainFactory public questChainFactory;
 
     mapping(uint256 => string) private _tokenURIs;
 
     mapping(uint256 => address) private _tokenOwners;
-
-    constructor() ERC1155("") {
-        questChainFactory = IQuestChainFactory(msg.sender);
-    }
 
     modifier onlyChainFactory() {
         require(
@@ -38,44 +33,27 @@ contract QuestChainToken is IQuestChainToken, ERC1155, Ownable {
         _;
     }
 
+    constructor() ERC1155("") {
+        questChainFactory = IQuestChainFactory(msg.sender);
+    }
+
     function setTokenOwner(uint256 _tokenId, address _questChain)
         public
-        override
         onlyChainFactory
     {
         _tokenOwners[_tokenId] = _questChain;
     }
 
-    function tokenOwner(uint256 _tokenId)
-        public
-        view
-        override
-        returns (address)
-    {
-        return _tokenOwners[_tokenId];
-    }
-
     function setTokenURI(uint256 _tokenId, string memory _tokenURI)
         public
-        override
         onlyTokenOwner(_tokenId)
     {
         _tokenURIs[_tokenId] = _tokenURI;
         emit URI(uri(_tokenId), _tokenId);
     }
 
-    function uri(uint256 _tokenId)
-        public
-        view
-        override(IERC1155MetadataURI, ERC1155)
-        returns (string memory)
-    {
-        return _tokenURIs[_tokenId];
-    }
-
     function mint(address _user, uint256 _tokenId)
         public
-        override
         onlyTokenOwner(_tokenId)
     {
         uint256 userBalance = balanceOf(_user, _tokenId);
@@ -85,12 +63,24 @@ contract QuestChainToken is IQuestChainToken, ERC1155, Ownable {
 
     function burn(address _user, uint256 _tokenId)
         public
-        override
         onlyTokenOwner(_tokenId)
     {
         uint256 userBalance = balanceOf(_user, _tokenId);
         require(userBalance == 1, "QuestChainToken: token not found");
         _burn(_user, _tokenId, 1);
+    }
+
+    function tokenOwner(uint256 _tokenId) public view returns (address) {
+        return _tokenOwners[_tokenId];
+    }
+
+    function uri(uint256 _tokenId)
+        public
+        view
+        override(IERC1155MetadataURI, ERC1155)
+        returns (string memory)
+    {
+        return _tokenURIs[_tokenId];
     }
 
     function _beforeTokenTransfer(
