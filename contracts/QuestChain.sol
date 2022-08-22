@@ -19,7 +19,6 @@ contract QuestChain is
     Pausable,
     AccessControl
 {
-    bytes32 public constant OWNER_ROLE = bytes32(0);
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     bytes32 public constant EDITOR_ROLE = keccak256("EDITOR_ROLE");
     bytes32 public constant REVIEWER_ROLE = keccak256("REVIEWER_ROLE");
@@ -74,7 +73,7 @@ contract QuestChain is
         questChainToken = IQuestChainToken(questChainFactory.questChainToken());
         questChainId = questChainFactory.questChainCount();
 
-        _setRoleAdmin(ADMIN_ROLE, OWNER_ROLE);
+        _setRoleAdmin(ADMIN_ROLE, DEFAULT_ADMIN_ROLE);
         _setRoleAdmin(EDITOR_ROLE, ADMIN_ROLE);
         _setRoleAdmin(REVIEWER_ROLE, ADMIN_ROLE);
 
@@ -82,7 +81,7 @@ contract QuestChain is
         require(_info.owners.length > 0, "QuestChain: no owners");
 
         for (uint256 i = 0; i < _info.owners.length; i = i + 1) {
-            _grantRole(OWNER_ROLE, _info.owners[i]);
+            _grantRole(DEFAULT_ADMIN_ROLE, _info.owners[i]);
             _grantRole(ADMIN_ROLE, _info.owners[i]);
             _grantRole(EDITOR_ROLE, _info.owners[i]);
             _grantRole(REVIEWER_ROLE, _info.owners[i]);
@@ -283,7 +282,7 @@ contract QuestChain is
         onlyRole(getRoleAdmin(role))
     {
         _grantRole(role, account);
-        if (role == OWNER_ROLE) {
+        if (role == DEFAULT_ADMIN_ROLE) {
             grantRole(ADMIN_ROLE, account);
         } else if (role == ADMIN_ROLE) {
             grantRole(EDITOR_ROLE, account);
@@ -303,7 +302,7 @@ contract QuestChain is
         } else if (role == EDITOR_ROLE) {
             revokeRole(ADMIN_ROLE, account);
         } else if (role == ADMIN_ROLE) {
-            revokeRole(OWNER_ROLE, account);
+            revokeRole(DEFAULT_ADMIN_ROLE, account);
         }
     }
 

@@ -29,7 +29,7 @@ describe('QuestChain', () => {
   let chainFactory: QuestChainFactory;
   let signers: SignerWithAddress[];
   let chainAddress: string;
-  let OWNER_ROLE: string;
+  let DEFAULT_ADMIN_ROLE: string;
   let ADMIN_ROLE: string;
   let EDITOR_ROLE: string;
   let REVIEWER_ROLE: string;
@@ -44,12 +44,13 @@ describe('QuestChain', () => {
 
     const questChainImpl = await deploy<QuestChain>('QuestChain', {});
 
-    [OWNER_ROLE, ADMIN_ROLE, EDITOR_ROLE, REVIEWER_ROLE] = await Promise.all([
-      questChainImpl.OWNER_ROLE(),
-      questChainImpl.ADMIN_ROLE(),
-      questChainImpl.EDITOR_ROLE(),
-      questChainImpl.REVIEWER_ROLE(),
-    ]);
+    [DEFAULT_ADMIN_ROLE, ADMIN_ROLE, EDITOR_ROLE, REVIEWER_ROLE] =
+      await Promise.all([
+        questChainImpl.DEFAULT_ADMIN_ROLE(),
+        questChainImpl.ADMIN_ROLE(),
+        questChainImpl.EDITOR_ROLE(),
+        questChainImpl.REVIEWER_ROLE(),
+      ]);
 
     chainFactory = await deploy<QuestChainFactory>(
       'QuestChainFactory',
@@ -92,13 +93,17 @@ describe('QuestChain', () => {
   });
 
   it('Should initialize correctly', async () => {
-    expect(await chain.hasRole(OWNER_ROLE, owner.address)).to.equal(true);
+    expect(await chain.hasRole(DEFAULT_ADMIN_ROLE, owner.address)).to.equal(
+      true,
+    );
     expect(await chain.hasRole(ADMIN_ROLE, owner.address)).to.equal(true);
     expect(await chain.hasRole(EDITOR_ROLE, owner.address)).to.equal(true);
     expect(await chain.hasRole(REVIEWER_ROLE, owner.address)).to.equal(true);
 
-    expect(await chain.getRoleAdmin(OWNER_ROLE)).to.equal(OWNER_ROLE);
-    expect(await chain.getRoleAdmin(ADMIN_ROLE)).to.equal(OWNER_ROLE);
+    expect(await chain.getRoleAdmin(DEFAULT_ADMIN_ROLE)).to.equal(
+      DEFAULT_ADMIN_ROLE,
+    );
+    expect(await chain.getRoleAdmin(ADMIN_ROLE)).to.equal(DEFAULT_ADMIN_ROLE);
     expect(await chain.getRoleAdmin(EDITOR_ROLE)).to.equal(ADMIN_ROLE);
     expect(await chain.getRoleAdmin(REVIEWER_ROLE)).to.equal(ADMIN_ROLE);
 
@@ -108,7 +113,7 @@ describe('QuestChain', () => {
   describe('grantRole', async () => {
     it('should grant REVIEWER_ROLE', async () => {
       const account = signers[9].address;
-      expect(await chain.hasRole(OWNER_ROLE, account)).to.equal(false);
+      expect(await chain.hasRole(DEFAULT_ADMIN_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(ADMIN_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(EDITOR_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(REVIEWER_ROLE, account)).to.equal(false);
@@ -120,7 +125,7 @@ describe('QuestChain', () => {
         .to.emit(chain, 'RoleGranted')
         .withArgs(REVIEWER_ROLE, account, owner.address);
 
-      expect(await chain.hasRole(OWNER_ROLE, account)).to.equal(false);
+      expect(await chain.hasRole(DEFAULT_ADMIN_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(ADMIN_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(EDITOR_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(REVIEWER_ROLE, account)).to.equal(true);
@@ -128,7 +133,7 @@ describe('QuestChain', () => {
 
     it('should grant EDITOR_ROLE and roles below', async () => {
       const account = signers[10].address;
-      expect(await chain.hasRole(OWNER_ROLE, account)).to.equal(false);
+      expect(await chain.hasRole(DEFAULT_ADMIN_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(ADMIN_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(EDITOR_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(REVIEWER_ROLE, account)).to.equal(false);
@@ -143,7 +148,7 @@ describe('QuestChain', () => {
         .to.emit(chain, 'RoleGranted')
         .withArgs(EDITOR_ROLE, account, owner.address);
 
-      expect(await chain.hasRole(OWNER_ROLE, account)).to.equal(false);
+      expect(await chain.hasRole(DEFAULT_ADMIN_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(ADMIN_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(EDITOR_ROLE, account)).to.equal(true);
       expect(await chain.hasRole(REVIEWER_ROLE, account)).to.equal(true);
@@ -151,7 +156,7 @@ describe('QuestChain', () => {
 
     it('should grant ADMIN_ROLE and roles below', async () => {
       const account = signers[11].address;
-      expect(await chain.hasRole(OWNER_ROLE, account)).to.equal(false);
+      expect(await chain.hasRole(DEFAULT_ADMIN_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(ADMIN_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(EDITOR_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(REVIEWER_ROLE, account)).to.equal(false);
@@ -169,20 +174,20 @@ describe('QuestChain', () => {
         .to.emit(chain, 'RoleGranted')
         .withArgs(ADMIN_ROLE, account, owner.address);
 
-      expect(await chain.hasRole(OWNER_ROLE, account)).to.equal(false);
+      expect(await chain.hasRole(DEFAULT_ADMIN_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(ADMIN_ROLE, account)).to.equal(true);
       expect(await chain.hasRole(EDITOR_ROLE, account)).to.equal(true);
       expect(await chain.hasRole(REVIEWER_ROLE, account)).to.equal(true);
     });
 
-    it('should grant OWNER_ROLE and roles below', async () => {
+    it('should grant DEFAULT_ADMIN_ROLE and roles below', async () => {
       const account = signers[12].address;
-      expect(await chain.hasRole(OWNER_ROLE, account)).to.equal(false);
+      expect(await chain.hasRole(DEFAULT_ADMIN_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(ADMIN_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(EDITOR_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(REVIEWER_ROLE, account)).to.equal(false);
 
-      const tx = await chain.grantRole(OWNER_ROLE, account);
+      const tx = await chain.grantRole(DEFAULT_ADMIN_ROLE, account);
       await tx.wait();
 
       await expect(tx)
@@ -196,9 +201,9 @@ describe('QuestChain', () => {
         .withArgs(ADMIN_ROLE, account, owner.address);
       await expect(tx)
         .to.emit(chain, 'RoleGranted')
-        .withArgs(OWNER_ROLE, account, owner.address);
+        .withArgs(DEFAULT_ADMIN_ROLE, account, owner.address);
 
-      expect(await chain.hasRole(OWNER_ROLE, account)).to.equal(true);
+      expect(await chain.hasRole(DEFAULT_ADMIN_ROLE, account)).to.equal(true);
       expect(await chain.hasRole(ADMIN_ROLE, account)).to.equal(true);
       expect(await chain.hasRole(EDITOR_ROLE, account)).to.equal(true);
       expect(await chain.hasRole(REVIEWER_ROLE, account)).to.equal(true);
@@ -206,24 +211,24 @@ describe('QuestChain', () => {
   });
 
   describe('revokeRole', async () => {
-    it('should revoke OWNER_ROLE', async () => {
+    it('should revoke DEFAULT_ADMIN_ROLE', async () => {
       const account = signers[9].address;
-      let tx = await chain.grantRole(OWNER_ROLE, account);
+      let tx = await chain.grantRole(DEFAULT_ADMIN_ROLE, account);
       await tx.wait();
 
-      expect(await chain.hasRole(OWNER_ROLE, account)).to.equal(true);
+      expect(await chain.hasRole(DEFAULT_ADMIN_ROLE, account)).to.equal(true);
       expect(await chain.hasRole(ADMIN_ROLE, account)).to.equal(true);
       expect(await chain.hasRole(EDITOR_ROLE, account)).to.equal(true);
       expect(await chain.hasRole(REVIEWER_ROLE, account)).to.equal(true);
 
-      tx = await chain.revokeRole(OWNER_ROLE, account);
+      tx = await chain.revokeRole(DEFAULT_ADMIN_ROLE, account);
       await tx.wait();
 
       await expect(tx)
         .to.emit(chain, 'RoleRevoked')
-        .withArgs(OWNER_ROLE, account, owner.address);
+        .withArgs(DEFAULT_ADMIN_ROLE, account, owner.address);
 
-      expect(await chain.hasRole(OWNER_ROLE, account)).to.equal(false);
+      expect(await chain.hasRole(DEFAULT_ADMIN_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(ADMIN_ROLE, account)).to.equal(true);
       expect(await chain.hasRole(EDITOR_ROLE, account)).to.equal(true);
       expect(await chain.hasRole(REVIEWER_ROLE, account)).to.equal(true);
@@ -231,10 +236,10 @@ describe('QuestChain', () => {
 
     it('should revoke ADMIN_ROLE and roles above', async () => {
       const account = signers[10].address;
-      let tx = await chain.grantRole(OWNER_ROLE, account);
+      let tx = await chain.grantRole(DEFAULT_ADMIN_ROLE, account);
       await tx.wait();
 
-      expect(await chain.hasRole(OWNER_ROLE, account)).to.equal(true);
+      expect(await chain.hasRole(DEFAULT_ADMIN_ROLE, account)).to.equal(true);
       expect(await chain.hasRole(ADMIN_ROLE, account)).to.equal(true);
       expect(await chain.hasRole(EDITOR_ROLE, account)).to.equal(true);
       expect(await chain.hasRole(REVIEWER_ROLE, account)).to.equal(true);
@@ -247,9 +252,9 @@ describe('QuestChain', () => {
         .withArgs(ADMIN_ROLE, account, owner.address);
       await expect(tx)
         .to.emit(chain, 'RoleRevoked')
-        .withArgs(OWNER_ROLE, account, owner.address);
+        .withArgs(DEFAULT_ADMIN_ROLE, account, owner.address);
 
-      expect(await chain.hasRole(OWNER_ROLE, account)).to.equal(false);
+      expect(await chain.hasRole(DEFAULT_ADMIN_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(ADMIN_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(EDITOR_ROLE, account)).to.equal(true);
       expect(await chain.hasRole(REVIEWER_ROLE, account)).to.equal(true);
@@ -257,10 +262,10 @@ describe('QuestChain', () => {
 
     it('should revoke EDITOR_ROLE and roles above', async () => {
       const account = signers[11].address;
-      let tx = await chain.grantRole(OWNER_ROLE, account);
+      let tx = await chain.grantRole(DEFAULT_ADMIN_ROLE, account);
       await tx.wait();
 
-      expect(await chain.hasRole(OWNER_ROLE, account)).to.equal(true);
+      expect(await chain.hasRole(DEFAULT_ADMIN_ROLE, account)).to.equal(true);
       expect(await chain.hasRole(ADMIN_ROLE, account)).to.equal(true);
       expect(await chain.hasRole(EDITOR_ROLE, account)).to.equal(true);
       expect(await chain.hasRole(REVIEWER_ROLE, account)).to.equal(true);
@@ -276,9 +281,9 @@ describe('QuestChain', () => {
         .withArgs(ADMIN_ROLE, account, owner.address);
       await expect(tx)
         .to.emit(chain, 'RoleRevoked')
-        .withArgs(OWNER_ROLE, account, owner.address);
+        .withArgs(DEFAULT_ADMIN_ROLE, account, owner.address);
 
-      expect(await chain.hasRole(OWNER_ROLE, account)).to.equal(false);
+      expect(await chain.hasRole(DEFAULT_ADMIN_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(ADMIN_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(EDITOR_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(REVIEWER_ROLE, account)).to.equal(true);
@@ -286,10 +291,10 @@ describe('QuestChain', () => {
 
     it('should revoke REVIEWER_ROLE and roles above', async () => {
       const account = signers[12].address;
-      let tx = await chain.grantRole(OWNER_ROLE, account);
+      let tx = await chain.grantRole(DEFAULT_ADMIN_ROLE, account);
       await tx.wait();
 
-      expect(await chain.hasRole(OWNER_ROLE, account)).to.equal(true);
+      expect(await chain.hasRole(DEFAULT_ADMIN_ROLE, account)).to.equal(true);
       expect(await chain.hasRole(ADMIN_ROLE, account)).to.equal(true);
       expect(await chain.hasRole(EDITOR_ROLE, account)).to.equal(true);
       expect(await chain.hasRole(REVIEWER_ROLE, account)).to.equal(true);
@@ -308,9 +313,9 @@ describe('QuestChain', () => {
         .withArgs(ADMIN_ROLE, account, owner.address);
       await expect(tx)
         .to.emit(chain, 'RoleRevoked')
-        .withArgs(OWNER_ROLE, account, owner.address);
+        .withArgs(DEFAULT_ADMIN_ROLE, account, owner.address);
 
-      expect(await chain.hasRole(OWNER_ROLE, account)).to.equal(false);
+      expect(await chain.hasRole(DEFAULT_ADMIN_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(ADMIN_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(EDITOR_ROLE, account)).to.equal(false);
       expect(await chain.hasRole(REVIEWER_ROLE, account)).to.equal(false);

@@ -26,7 +26,7 @@ describe('QuestChainFactory', () => {
   let chainFactory: QuestChainFactory;
   let signers: SignerWithAddress[];
   let chainAddress: string;
-  let OWNER_ROLE: string;
+  let DEFAULT_ADMIN_ROLE: string;
   let ADMIN_ROLE: string;
   let EDITOR_ROLE: string;
   let REVIEWER_ROLE: string;
@@ -42,12 +42,13 @@ describe('QuestChainFactory', () => {
 
     questChainImpl = await deploy<QuestChain>('QuestChain', {});
 
-    [OWNER_ROLE, ADMIN_ROLE, EDITOR_ROLE, REVIEWER_ROLE] = await Promise.all([
-      questChainImpl.OWNER_ROLE(),
-      questChainImpl.ADMIN_ROLE(),
-      questChainImpl.EDITOR_ROLE(),
-      questChainImpl.REVIEWER_ROLE(),
-    ]);
+    [DEFAULT_ADMIN_ROLE, ADMIN_ROLE, EDITOR_ROLE, REVIEWER_ROLE] =
+      await Promise.all([
+        questChainImpl.DEFAULT_ADMIN_ROLE(),
+        questChainImpl.ADMIN_ROLE(),
+        questChainImpl.EDITOR_ROLE(),
+        questChainImpl.REVIEWER_ROLE(),
+      ]);
 
     chainFactory = await deploy<QuestChainFactory>(
       'QuestChainFactory',
@@ -64,7 +65,7 @@ describe('QuestChainFactory', () => {
       'FactoryInit',
     );
 
-    expect(OWNER_ROLE).to.equal(numberToBytes32(0));
+    expect(DEFAULT_ADMIN_ROLE).to.equal(numberToBytes32(0));
   });
 
   it('Should be initialized properly', async () => {
@@ -137,13 +138,15 @@ describe('QuestChainFactory', () => {
       .to.emit(chain, 'QuestChainInit')
       .withArgs(DETAILS_STRING, [], false);
 
-    expect(await chain.hasRole(OWNER_ROLE, admin)).to.equal(true);
+    expect(await chain.hasRole(DEFAULT_ADMIN_ROLE, admin)).to.equal(true);
     expect(await chain.hasRole(ADMIN_ROLE, admin)).to.equal(true);
     expect(await chain.hasRole(EDITOR_ROLE, admin)).to.equal(true);
     expect(await chain.hasRole(REVIEWER_ROLE, admin)).to.equal(true);
 
-    expect(await chain.getRoleAdmin(OWNER_ROLE)).to.equal(OWNER_ROLE);
-    expect(await chain.getRoleAdmin(ADMIN_ROLE)).to.equal(OWNER_ROLE);
+    expect(await chain.getRoleAdmin(DEFAULT_ADMIN_ROLE)).to.equal(
+      DEFAULT_ADMIN_ROLE,
+    );
+    expect(await chain.getRoleAdmin(ADMIN_ROLE)).to.equal(DEFAULT_ADMIN_ROLE);
     expect(await chain.getRoleAdmin(EDITOR_ROLE)).to.equal(ADMIN_ROLE);
     expect(await chain.getRoleAdmin(REVIEWER_ROLE)).to.equal(ADMIN_ROLE);
 
@@ -178,7 +181,7 @@ describe('QuestChainFactory', () => {
 
     await Promise.all(
       owners.map(async owner =>
-        expect(await chain.hasRole(OWNER_ROLE, owner)).to.equal(true),
+        expect(await chain.hasRole(DEFAULT_ADMIN_ROLE, owner)).to.equal(true),
       ),
     );
     await Promise.all(
