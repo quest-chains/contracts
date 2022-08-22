@@ -58,12 +58,6 @@ describe('QuestChainFactory', () => {
       mockToken.address,
       10,
     );
-
-    await expect(chainFactory.deployTransaction).to.emit(
-      chainFactory,
-      'FactoryInit',
-    );
-
     expect(OWNER_ROLE).to.equal(numberToBytes32(0));
   });
 
