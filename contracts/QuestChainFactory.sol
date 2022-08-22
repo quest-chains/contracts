@@ -71,8 +71,6 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
         treasury = _treasury;
         paymentToken = _paymentToken;
         upgradeFee = _upgradeFee;
-
-        emit FactoryInit();
     }
 
     function replaceAdmin(address _admin)

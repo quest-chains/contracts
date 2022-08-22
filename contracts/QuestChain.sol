@@ -42,7 +42,7 @@ contract QuestChain is
     }
 
     modifier onlyPremium() {
-        require(premium == true, "QuestChain: not premium");
+        require(premium, "QuestChain: not premium");
         _;
     }
 
@@ -62,7 +62,9 @@ contract QuestChain is
     }
 
     // solhint-disable-next-line no-empty-blocks
-    constructor() initializer {}
+    constructor() {
+        _disableInitializers();
+    }
 
     function init(QuestChainCommons.QuestChainInfo calldata _info)
         external
@@ -262,7 +264,7 @@ contract QuestChain is
     }
 
     function upgrade() external onlyFactory {
-        require(premium == false, "QuestChain: already upgraded");
+        require(!premium, "QuestChain: already upgraded");
         premium = true;
     }
 
