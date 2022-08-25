@@ -22,7 +22,7 @@ const DETAILS_STRING = 'ipfs://details';
 const URI_STRING = 'ipfs://uri';
 
 describe('QuestChainFactory', () => {
-  let questChainImpl: QuestChain;
+  let questChainTemplate: QuestChain;
   let chainFactory: QuestChainFactory;
   let signers: SignerWithAddress[];
   let chainAddress: string;
@@ -40,20 +40,20 @@ describe('QuestChainFactory', () => {
 
     mockToken = await deployMockContract(signers[0], IERC20__factory.abi);
 
-    questChainImpl = await deploy<QuestChain>('QuestChain', {});
+    questChainTemplate = await deploy<QuestChain>('QuestChain', {});
 
     [DEFAULT_ADMIN_ROLE, ADMIN_ROLE, EDITOR_ROLE, REVIEWER_ROLE] =
       await Promise.all([
-        questChainImpl.DEFAULT_ADMIN_ROLE(),
-        questChainImpl.ADMIN_ROLE(),
-        questChainImpl.EDITOR_ROLE(),
-        questChainImpl.REVIEWER_ROLE(),
+        questChainTemplate.DEFAULT_ADMIN_ROLE(),
+        questChainTemplate.ADMIN_ROLE(),
+        questChainTemplate.EDITOR_ROLE(),
+        questChainTemplate.REVIEWER_ROLE(),
       ]);
 
     chainFactory = await deploy<QuestChainFactory>(
       'QuestChainFactory',
       {},
-      questChainImpl.address,
+      questChainTemplate.address,
       admin,
       admin,
       mockToken.address,
@@ -71,35 +71,12 @@ describe('QuestChainFactory', () => {
   it('Should be initialized properly', async () => {
     expect(await chainFactory.questChainCount()).to.equal(0);
     expect(await chainFactory.admin()).to.equal(admin);
-    expect(await chainFactory.questChainImpl()).to.equal(
-      questChainImpl.address,
+    expect(await chainFactory.questChainTemplate()).to.equal(
+      questChainTemplate.address,
     );
   });
 
-  it('Should revert change questChainImpl if zero address', async () => {
-    const tx = chainFactory.replaceChainImpl(ethers.constants.AddressZero);
-    await expect(tx).to.revertedWith('QuestChainFactory: 0 address');
-  });
-
-  it('Should revert change questChainImpl if not admin', async () => {
-    const newQuestChain = await deploy<QuestChain>('QuestChain', {});
-    const tx = chainFactory
-      .connect(signers[1])
-      .replaceChainImpl(newQuestChain.address);
-    await expect(tx).to.revertedWith('QuestChainFactory: not admin');
-  });
-
-  it('Should change questChainImpl', async () => {
-    const newQuestChain = await deploy<QuestChain>('QuestChain', {});
-    const tx = await chainFactory.replaceChainImpl(newQuestChain.address);
-    await tx.wait();
-    await expect(tx)
-      .to.emit(chainFactory, 'ImplReplaced')
-      .withArgs(newQuestChain.address);
-    expect(await chainFactory.questChainImpl()).to.equal(newQuestChain.address);
-  });
-
-  it('Should revert init for questChainImpl', async () => {
+  it('Should revert init for questChainTemplate', async () => {
     const info: QuestChainCommons.QuestChainInfoStruct = {
       details: DETAILS_STRING,
       tokenURI: URI_STRING,
@@ -110,7 +87,7 @@ describe('QuestChainFactory', () => {
       quests: [],
       paused: false,
     };
-    const tx = questChainImpl.init(info);
+    const tx = questChainTemplate.init(info);
     await expect(tx).to.revertedWith(
       'Initializable: contract is already initialized',
     );

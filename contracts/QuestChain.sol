@@ -100,7 +100,6 @@ contract QuestChain is
         _;
     }
 
-    // solhint-disable-next-line no-empty-blocks
     constructor() {
         _disableInitializers();
     }

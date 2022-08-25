@@ -2,15 +2,18 @@
 
 pragma solidity 0.8.16;
 
+import "./IERC20Token.sol";
+import "./IQuestChainToken.sol";
 import "../libraries/QuestChainCommons.sol";
 
 interface IQuestChainFactory {
     event FactorySetup();
     event QuestChainCreated(uint256 index, address questChain);
+    event AdminReplaceProposed(address proposedAdmin);
     event AdminReplaced(address admin);
-    event ImplReplaced(address impl);
-    event TreasuryReplaced(address treasury);
-    event PaymentTokenReplaced(address paymentToken);
+    event PaymentTokenReplaceProposed(address proposedPaymentToken);
+    event PaymentTokenReplaced(IERC20Token paymentToken);
+    event UpgradeFeeReplaceProposed(uint256 proposedUpgradeFee);
     event UpgradeFeeReplaced(uint256 upgradeFee);
     event QuestChainUpgraded(address sender, address questChain);
 
@@ -46,15 +49,15 @@ interface IQuestChainFactory {
 
     function questChainCount() external view returns (uint256);
 
-    function questChainImpl() external view returns (address);
+    function questChainTemplate() external view returns (address);
 
-    function questChainToken() external view returns (address);
+    function questChainToken() external view returns (IQuestChainToken);
 
     function admin() external view returns (address);
 
     function treasury() external view returns (address);
 
-    function paymentToken() external view returns (address);
+    function paymentToken() external view returns (IERC20Token);
 
     function upgradeFee() external view returns (uint256);
 }
