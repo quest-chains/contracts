@@ -62,7 +62,7 @@ describe('QuestChainFactory', () => {
 
     await expect(chainFactory.deployTransaction).to.emit(
       chainFactory,
-      'FactoryInit',
+      'FactorySetup',
     );
 
     expect(DEFAULT_ADMIN_ROLE).to.equal(numberToBytes32(0));

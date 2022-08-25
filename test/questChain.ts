@@ -361,7 +361,7 @@ describe('QuestChain', () => {
 
       await expect(tx)
         .to.emit(chain, 'QuestsCreated')
-        .withArgs(owner.address, [0], [DETAILS_STRING]);
+        .withArgs(owner.address, [DETAILS_STRING]);
       expect(await chain.questCount()).to.equal(1);
     });
 
@@ -379,7 +379,7 @@ describe('QuestChain', () => {
 
       await expect(tx)
         .to.emit(chain, 'QuestsCreated')
-        .withArgs(signers[1].address, [1], [DETAILS_STRING]);
+        .withArgs(signers[1].address, [DETAILS_STRING]);
       expect(await chain.questCount()).to.equal(2);
 
       const detailsArray = [DETAILS_STRING, DETAILS_STRING];
@@ -388,7 +388,7 @@ describe('QuestChain', () => {
 
       await expect(tx)
         .to.emit(chain, 'QuestsCreated')
-        .withArgs(signers[1].address, [2, 3], detailsArray);
+        .withArgs(signers[1].address, detailsArray);
 
       expect(await chain.questCount()).to.equal(4);
     });

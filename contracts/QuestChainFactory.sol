@@ -38,7 +38,7 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
     address public questChainToken;
     // DAO treasury address
     address public treasury;
-    // ERC20 token address for payments #todo consider making this IERC20Permit interface
+    // ERC20 token address for payments
     address public paymentToken;
 
     /********************************
@@ -113,14 +113,14 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
         // set the DAO treasury address
         treasury = _treasury;
 
-        // set the payment token address #todo consider assigning the interface here
+        // set the payment token address
         paymentToken = _paymentToken;
 
         // set the quest chain upgrade fee
         upgradeFee = _upgradeFee;
 
-        // log constructor data #todo consider renaming this without Init - since it's not an initializer related func
-        emit FactoryInit();
+        // log constructor data
+        emit FactorySetup();
     }
 
     /*************************
@@ -366,7 +366,6 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
     /**
      * @dev Internal function upgrades an existing quest chain and transfers upgrade fee to treasury
      * @param _questChainAddress the new minimal proxy's address
-     * #todo #medium if safeTransfer call returns false; upgrade will not revert
      */
     function _upgradeQuestChain(address _questChainAddress) internal {
         // transfer upgrade fee to the treasury from caller

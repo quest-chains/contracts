@@ -15,8 +15,8 @@ import "./interfaces/IQuestChainToken.sol";
 // author: @dan13ram
 
 contract QuestChainToken is IQuestChainToken, ERC1155 {
-    // instantiate factory interface (consider making immutable)
-    IQuestChainFactory public questChainFactory;
+    // instantiate factory interface
+    IQuestChainFactory public immutable questChainFactory;
 
     /********************************
      MAPPING STRUCTS EVENTS MODIFIER
@@ -31,7 +31,7 @@ contract QuestChainToken is IQuestChainToken, ERC1155 {
     /**
      * @dev Access control modifier for functions callable by factory contract only
      */
-    modifier onlyChainFactory() {
+    modifier onlyFactory() {
         require(
             msg.sender == address(questChainFactory),
             "QuestChainToken: not factory"
@@ -40,7 +40,7 @@ contract QuestChainToken is IQuestChainToken, ERC1155 {
     }
 
     /**
-     * @dev Access control modifier for functions callable by quest owners only
+     * @dev Access control modifier for functions callable by token owners only
      * @param _tokenId the complete initialization data
      */
     modifier onlyTokenOwner(uint256 _tokenId) {
@@ -66,7 +66,7 @@ contract QuestChainToken is IQuestChainToken, ERC1155 {
      */
     function setTokenOwner(uint256 _tokenId, address _questChain)
         public
-        onlyChainFactory
+        onlyFactory
     {
         // assign quest chain address as quest token's owner
         _tokenOwners[_tokenId] = _questChain;
