@@ -3,12 +3,15 @@ import { expect } from 'chai';
 import { MockContract } from 'ethereum-waffle';
 import { ethers, waffle } from 'hardhat';
 
+const { provider } = waffle;
+
 import {
   IERC20Token__factory,
   MockERC20Token,
   QuestChain,
   QuestChainFactory,
   QuestChainToken,
+  QuestChainToken__factory,
 } from '../types';
 import { QuestChainCommons } from '../types/contracts/QuestChainFactory';
 import {
@@ -36,6 +39,7 @@ describe('QuestChainFactory', () => {
   let admin: string;
   let mockToken: MockContract;
   let mockPermitToken: MockERC20Token;
+  let questChainToken: QuestChainToken;
 
   before(async () => {
     signers = await ethers.getSigners();
@@ -69,6 +73,11 @@ describe('QuestChainFactory', () => {
     await expect(chainFactory.deployTransaction).to.emit(
       chainFactory,
       'FactorySetup',
+    );
+
+    questChainToken = QuestChainToken__factory.connect(
+      await chainFactory.questChainToken(),
+      signers[0],
     );
 
     expect(DEFAULT_ADMIN_ROLE).to.equal(numberToBytes32(0));
@@ -540,6 +549,177 @@ describe('QuestChainFactory', () => {
 
         expect(await chain.getTokenURI()).to.equal(URI_STRING);
         expect(await chain.premium()).to.equal(true);
+      });
+    });
+
+    describe('questChainToken', async () => {
+      it('Should revert set token owner', async () => {
+        const txPromise = questChainToken.setTokenOwner(0, signers[0].address);
+        await expect(txPromise).to.be.revertedWith(
+          'QuestChainToken: not factory',
+        );
+      });
+      it('Should revert set token uri', async () => {
+        const txPromise = questChainToken.setTokenURI(0, URI_STRING);
+        await expect(txPromise).to.be.revertedWith(
+          'QuestChainToken: not token owner',
+        );
+      });
+    });
+
+    describe('replacing upgradeFee', async () => {
+      const NEW_UPGRADE_FEE = 20;
+      it('Should revert upgradeFee change proposal when sender is not admin', async () => {
+        const tx = chainFactory
+          .connect(signers[1])
+          .proposeUpgradeFeeReplace(NEW_UPGRADE_FEE);
+        await expect(tx).to.be.revertedWith('QCFactory: not admin');
+      });
+
+      it('Should be able to create a proposal for replacing upgradeFee', async () => {
+        const tx = await chainFactory.proposeUpgradeFeeReplace(NEW_UPGRADE_FEE);
+        await expect(tx)
+          .to.emit(chainFactory, 'UpgradeFeeReplaceProposed')
+          .withArgs(NEW_UPGRADE_FEE);
+        expect(await chainFactory.proposedUpgradeFee()).to.equal(
+          NEW_UPGRADE_FEE,
+        );
+      });
+
+      it('Should revert upgradeFee change proposal when new upgradeFee is same as old proposed upgradeFee', async () => {
+        const tx = chainFactory.proposeUpgradeFeeReplace(NEW_UPGRADE_FEE);
+        await expect(tx).to.be.revertedWith('QCFactory: no change');
+      });
+
+      it('Should revert upgradeFee change execution if not admin', async () => {
+        const tx = chainFactory.connect(signers[1]).executeUpgradeFeeReplace();
+        await expect(tx).to.be.revertedWith('QCFactory: not admin');
+      });
+
+      it('Should revert upgradeFee change execution if one day has not passed', async () => {
+        const tx = chainFactory.executeUpgradeFeeReplace();
+        await expect(tx).to.be.revertedWith('QCFactory: too soon');
+      });
+
+      it('Should execute upgradeFee change after one day', async () => {
+        await provider.send('evm_setNextBlockTimestamp', [
+          (await chainFactory.upgradeFeeProposalTimestamp())
+            .add(864000)
+            .toNumber(),
+        ]);
+        const tx = await chainFactory.executeUpgradeFeeReplace();
+        await expect(tx)
+          .to.emit(chainFactory, 'UpgradeFeeReplaced')
+          .withArgs(NEW_UPGRADE_FEE);
+        expect(await chainFactory.upgradeFee()).to.equal(NEW_UPGRADE_FEE);
+      });
+    });
+
+    describe('replacing paymentToken', async () => {
+      it('Should revert paymentToken change proposal when sender is not admin', async () => {
+        const tx = chainFactory
+          .connect(signers[1])
+          .proposePaymentTokenReplace(mockToken.address);
+        await expect(tx).to.be.revertedWith('QCFactory: not admin');
+      });
+
+      it('Should revert paymentToken change proposal when new paymentToken is 0 address', async () => {
+        const tx = chainFactory.proposePaymentTokenReplace(
+          ethers.constants.AddressZero,
+        );
+        await expect(tx).to.be.revertedWith('QCFactory: 0 address');
+      });
+
+      it('Should be able to create a proposal for replacing paymentToken', async () => {
+        const tx = await chainFactory.proposePaymentTokenReplace(
+          mockToken.address,
+        );
+        await expect(tx)
+          .to.emit(chainFactory, 'PaymentTokenReplaceProposed')
+          .withArgs(mockToken.address);
+        expect(await chainFactory.proposedPaymentToken()).to.equal(
+          mockToken.address,
+        );
+      });
+
+      it('Should revert paymentToken change proposal when new paymentToken is same as old proposed paymentToken', async () => {
+        const tx = chainFactory.proposePaymentTokenReplace(mockToken.address);
+        await expect(tx).to.be.revertedWith('QCFactory: no change');
+      });
+
+      it('Should revert paymentToken change execution if not admin', async () => {
+        const tx = chainFactory
+          .connect(signers[1])
+          .executePaymentTokenReplace();
+        await expect(tx).to.be.revertedWith('QCFactory: not admin');
+      });
+
+      it('Should revert paymentToken change execution if one day has not passed', async () => {
+        const tx = chainFactory.executePaymentTokenReplace();
+        await expect(tx).to.be.revertedWith('QCFactory: too soon');
+      });
+
+      it('Should execute paymentToken change after one day', async () => {
+        await provider.send('evm_setNextBlockTimestamp', [
+          (await chainFactory.paymentTokenProposalTimestamp())
+            .add(864000)
+            .toNumber(),
+        ]);
+        const tx = await chainFactory.executePaymentTokenReplace();
+        await expect(tx)
+          .to.emit(chainFactory, 'PaymentTokenReplaced')
+          .withArgs(mockToken.address);
+        expect(await chainFactory.paymentToken()).to.equal(mockToken.address);
+      });
+    });
+
+    describe('replacing admin', async () => {
+      it('Should revert admin change proposal when sender is not admin', async () => {
+        const tx = chainFactory
+          .connect(signers[1])
+          .proposePaymentTokenReplace(signers[1].address);
+        await expect(tx).to.be.revertedWith('QCFactory: not admin');
+      });
+
+      it('Should revert admin change proposal when new admin is 0 address', async () => {
+        const tx = chainFactory.proposeAdminReplace(
+          ethers.constants.AddressZero,
+        );
+        await expect(tx).to.be.revertedWith('QCFactory: 0 address');
+      });
+
+      it('Should be able to create a proposal for replacing admin', async () => {
+        const tx = await chainFactory.proposeAdminReplace(signers[1].address);
+        await expect(tx)
+          .to.emit(chainFactory, 'AdminReplaceProposed')
+          .withArgs(signers[1].address);
+        expect(await chainFactory.proposedAdmin()).to.equal(signers[1].address);
+      });
+
+      it('Should revert admin change proposal when new admin is same as old proposed admin', async () => {
+        const tx = chainFactory.proposeAdminReplace(signers[1].address);
+        await expect(tx).to.be.revertedWith('QCFactory: no change');
+      });
+
+      it('Should revert admin change execution if one day has not passed', async () => {
+        const tx = chainFactory.connect(signers[1]).executeAdminReplace();
+        await expect(tx).to.be.revertedWith('QCFactory: too soon');
+      });
+
+      it('Should revert admin change execution if not proposed admin', async () => {
+        await provider.send('evm_setNextBlockTimestamp', [
+          (await chainFactory.adminProposalTimestamp()).add(864000).toNumber(),
+        ]);
+        const tx = chainFactory.executeAdminReplace();
+        await expect(tx).to.be.revertedWith('QCFactory: !proposedAdmin');
+      });
+
+      it('Should execute admin change after one day', async () => {
+        const tx = await chainFactory.connect(signers[1]).executeAdminReplace();
+        await expect(tx)
+          .to.emit(chainFactory, 'AdminReplaced')
+          .withArgs(signers[1].address);
+        expect(await chainFactory.admin()).to.equal(signers[1].address);
       });
     });
   });

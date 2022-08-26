@@ -40,21 +40,21 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
     // proposed admin address
     address public proposedAdmin;
     // timestamp of last admin proposal
-    uint256 private adminProposalTimestamp;
+    uint256 public adminProposalTimestamp;
 
     // ERC20 token address for payments
     IERC20Token public paymentToken;
     // proposed payment token address
     address public proposedPaymentToken;
     // timestamp of last paymentToken proposal
-    uint256 private paymentTokenProposalTimestamp;
+    uint256 public paymentTokenProposalTimestamp;
 
     // cost to upgrade quest chains
     uint256 public upgradeFee;
     // proposed upgrade fee
     uint256 public proposedUpgradeFee;
     // timestamp of last upgrade fee proposal
-    uint256 private upgradeFeeProposalTimestamp;
+    uint256 public upgradeFeeProposalTimestamp;
 
     uint256 private constant ONE_DAY = 86400;
 
@@ -166,7 +166,9 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
      */
     function executeAdminReplace()
         external
+        nonZeroAddr(proposedAdmin)
         onlyAfterDelay(adminProposalTimestamp)
+        mustChangeAddr(proposedAdmin, admin)
     {
         require(proposedAdmin == msg.sender, "QCFactory: !proposedAdmin");
 
@@ -204,7 +206,9 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
     function executePaymentTokenReplace()
         external
         onlyAdmin
+        nonZeroAddr(proposedPaymentToken)
         onlyAfterDelay(paymentTokenProposalTimestamp)
+        mustChangeAddr(proposedPaymentToken, address(paymentToken))
     {
         // replace paymentToken
         paymentToken = IERC20Token(proposedPaymentToken);
@@ -240,6 +244,7 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
         external
         onlyAdmin
         onlyAfterDelay(upgradeFeeProposalTimestamp)
+        mustChangeUint(proposedUpgradeFee, upgradeFee)
     {
         // replace upgradeFee
         upgradeFee = proposedUpgradeFee;
