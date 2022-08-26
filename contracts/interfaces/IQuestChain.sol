@@ -2,6 +2,10 @@
 
 pragma solidity 0.8.16;
 
+//   ╔═╗ ┬ ┬┌─┐┌─┐┌┬┐╔═╗┬ ┬┌─┐┬┌┐┌┌─┐
+//   ║═╬╗│ │├┤ └─┐ │ ║  ├─┤├─┤││││└─┐
+//   ╚═╝╚└─┘└─┘└─┘ ┴ ╚═╝┴ ┴┴ ┴┴┘└┘└─┘
+
 import "../libraries/QuestChainCommons.sol";
 import "./IQuestChainToken.sol";
 

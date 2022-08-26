@@ -288,7 +288,7 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
     function createAndUpgrade(
         QuestChainCommons.QuestChainInfo calldata _info,
         bytes32 _salt
-    ) external returns (address) {
+    ) external nonReentrant returns (address) {
         // deploy new quest chain minimal proxy
         address questChainAddress = _create(_info, _salt);
 
@@ -309,7 +309,7 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
         bytes32 _salt,
         uint256 _deadline,
         bytes calldata _signature
-    ) external returns (address) {
+    ) external nonReentrant returns (address) {
         // deploy new quest chain minimal proxy
         address questChainAddress = _create(_info, _salt);
 

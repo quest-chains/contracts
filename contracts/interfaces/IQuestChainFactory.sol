@@ -2,6 +2,10 @@
 
 pragma solidity 0.8.16;
 
+//   ╔═╗ ┬ ┬┌─┐┌─┐┌┬┐╔═╗┬ ┬┌─┐┬┌┐┌┌─┐
+//   ║═╬╗│ │├┤ └─┐ │ ║  ├─┤├─┤││││└─┐
+//   ╚═╝╚└─┘└─┘└─┘ ┴ ╚═╝┴ ┴┴ ┴┴┘└┘└─┘
+
 import "./IERC20Token.sol";
 import "./IQuestChainToken.sol";
 import "../libraries/QuestChainCommons.sol";
