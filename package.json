@@ -31,10 +31,10 @@
     "@types/chai": "^4.3.3",
     "@types/graceful-fs": "^4.1.5",
     "@types/mocha": "^9.1.1",
-    "@types/node": "^18.7.9",
+    "@types/node": "^18.7.13",
     "@types/prompt-sync": "^4.1.1",
-    "@typescript-eslint/eslint-plugin": "^5.33.1",
-    "@typescript-eslint/parser": "^5.33.1",
+    "@typescript-eslint/eslint-plugin": "^5.35.1",
+    "@typescript-eslint/parser": "^5.35.1",
     "axios": "^0.27.2",
     "chai": "^4.3.6",
     "concurrently": "^7.2.2",
@@ -44,7 +44,7 @@
     "eslint-config-prettier": "^8.5.0",
     "eslint-plugin-jsx-a11y": "^6.6.0",
     "eslint-plugin-prettier": "^4.2.1",
-    "eslint-plugin-promise": "^6.0.0",
+    "eslint-plugin-promise": "^6.0.1",
     "eslint-plugin-simple-import-sort": "^7.0.0",
     "ethereum-waffle": "^3.4.4",
     "ethers": "^5.7.0",
@@ -62,7 +62,7 @@
     "solidity-coverage": "^0.7.21",
     "ts-node": "^10.8.2",
     "typechain": "^8.1.0",
-    "typescript": "^4.7.4"
+    "typescript": "^4.8.2"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [

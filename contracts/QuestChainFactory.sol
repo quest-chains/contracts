@@ -6,8 +6,6 @@ pragma solidity 0.8.16;
 //   ║═╬╗│ │├┤ └─┐ │ ║  ├─┤├─┤││││└─┐
 //   ╚═╝╚└─┘└─┘└─┘ ┴ ╚═╝┴ ┴┴ ┴┴┘└┘└─┘
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/draft-IERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
@@ -18,28 +16,47 @@ import "./QuestChainToken.sol";
 
 // author: @dan13ram
 
+/* solhint-disable not-rely-on-time */
+
 contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
-    using SafeERC20 for IERC20;
-    using SafeERC20 for IERC20Permit;
+    using SafeERC20 for IERC20Token;
 
     /********************************
      STATE VARIABLES
      *******************************/
 
+    // immutable contract address for quest chain ERC1155 tokens
+    IQuestChainToken public immutable questChainToken;
+    // immutable template contract address for quest chain
+    address public immutable questChainTemplate;
+    // immutable DAO treasury address
+    address public immutable treasury;
+
     // counter for all quest chains
     uint256 public questChainCount = 0;
-    // cost to upgrade quest chains
-    uint256 public upgradeFee;
+
     // access control role
     address public admin;
-    // implementation contract address for quest chain
-    address public questChainImpl;
-    // contract address for quest chain ERC1155 tokens
-    address public questChainToken;
-    // DAO treasury address
-    address public treasury;
-    // ERC20 token address for payments #todo consider making this IERC20Permit interface
-    address public paymentToken;
+    // proposed admin address
+    address public proposedAdmin;
+    // timestamp of last admin proposal
+    uint256 public adminProposalTimestamp;
+
+    // ERC20 token address for payments
+    IERC20Token public paymentToken;
+    // proposed payment token address
+    address public proposedPaymentToken;
+    // timestamp of last paymentToken proposal
+    uint256 public paymentTokenProposalTimestamp;
+
+    // cost to upgrade quest chains
+    uint256 public upgradeFee;
+    // proposed upgrade fee
+    uint256 public proposedUpgradeFee;
+    // timestamp of last upgrade fee proposal
+    uint256 public upgradeFeeProposalTimestamp;
+
+    uint256 private constant ONE_DAY = 86400;
 
     /********************************
      MAPPING STRUCTS EVENTS MODIFIER
@@ -52,7 +69,7 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
      * @dev Access control modifier for functions callable by admin only
      */
     modifier onlyAdmin() {
-        require(admin == msg.sender, "QuestChainFactory: not admin");
+        require(admin == msg.sender, "QCFactory: not admin");
         _;
     }
 
@@ -60,15 +77,7 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
      * @dev Modifier enforces non zero address
      */
     modifier nonZeroAddr(address _address) {
-        require(_address != address(0), "QuestChainFactory: 0 address");
-        _;
-    }
-
-    /**
-     * @dev Modifier enforces integers cannot be zero
-     */
-    modifier nonZeroUint(uint256 _uint) {
-        require(_uint != 0, "QuestChainFactory: 0 uint256");
+        require(_address != address(0), "QCFactory: 0 address");
         _;
     }
 
@@ -76,7 +85,7 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
      * @dev Modifier enforces two addresses are different
      */
     modifier mustChangeAddr(address _oldAddress, address _newAddress) {
-        require(_oldAddress != _newAddress, "QuestChainFactory: no change");
+        require(_oldAddress != _newAddress, "QCFactory: no change");
         _;
     }
 
@@ -84,43 +93,50 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
      * @dev Modifier enforces two integers are different
      */
     modifier mustChangeUint(uint256 _oldUint, uint256 _newUint) {
-        require(_oldUint != _newUint, "QuestChainFactory: no change");
+        require(_oldUint != _newUint, "QCFactory: no change");
+        _;
+    }
+
+    /**
+     * @dev Modifier enforces timestamps be atleast a day ago
+     */
+    modifier onlyAfterDelay(uint256 _timestamp) {
+        require(block.timestamp >= _timestamp + ONE_DAY, "QCFactory: too soon");
         _;
     }
 
     constructor(
-        address _impl,
+        address _template,
         address _admin,
         address _treasury,
         address _paymentToken,
         uint256 _upgradeFee
     )
-        nonZeroAddr(_impl)
+        nonZeroAddr(_template)
         nonZeroAddr(_admin)
         nonZeroAddr(_treasury)
         nonZeroAddr(_paymentToken)
-        nonZeroUint(_upgradeFee)
     {
         // deploy the Quest Chain Token and store it's address
-        questChainToken = address(new QuestChainToken());
+        questChainToken = new QuestChainToken();
 
-        // set the admin address
-        admin = _admin;
-
-        // set the quest chain implementation contract
-        questChainImpl = _impl;
+        // set the quest chain template contract
+        questChainTemplate = _template;
 
         // set the DAO treasury address
         treasury = _treasury;
 
-        // set the payment token address #todo consider assigning the interface here
-        paymentToken = _paymentToken;
+        // set the admin address
+        admin = _admin;
+
+        // set the payment token address
+        paymentToken = IERC20Token(_paymentToken);
 
         // set the quest chain upgrade fee
         upgradeFee = _upgradeFee;
 
-        // log constructor data #todo consider renaming this without Init - since it's not an initializer related func
-        emit FactoryInit();
+        // log constructor data
+        emit FactorySetup();
     }
 
     /*************************
@@ -128,96 +144,116 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
      *************************/
 
     /**
-     * @dev Assigns a new admin address
+     * @dev Proposes a new admin address
      * @param _admin the address of the new admin
      */
-    function replaceAdmin(address _admin)
+    function proposeAdminReplace(address _admin)
         external
         onlyAdmin
         nonZeroAddr(_admin)
-        mustChangeAddr(admin, _admin)
+        mustChangeAddr(proposedAdmin, _admin)
     {
-        // set new admin address
-        admin = _admin;
+        // set proposed admin address
+        proposedAdmin = _admin;
+        adminProposalTimestamp = block.timestamp;
+
+        // log proposedAdmin change data
+        emit AdminReplaceProposed(_admin);
+    }
+
+    /**
+     * @dev Executes the proposed admin replacement
+     */
+    function executeAdminReplace()
+        external
+        nonZeroAddr(proposedAdmin)
+        onlyAfterDelay(adminProposalTimestamp)
+        mustChangeAddr(proposedAdmin, admin)
+    {
+        require(proposedAdmin == msg.sender, "QCFactory: !proposedAdmin");
+
+        // replace admin
+        admin = proposedAdmin;
+
+        delete proposedAdmin;
+        delete adminProposalTimestamp;
 
         // log admin change data
-        emit AdminReplaced(_admin);
+        emit AdminReplaced(admin);
     }
 
     /**
-     * @dev Assigns a new quest chain contract implementation address
-     * @param _impl the address of the new quest chain implementation contract
-     * #todo consider storing each different implementation address in a registry mapping for extensibility
+     * @dev Proposes a new paymentToken address
+     * @param _paymentToken the address of the new paymentToken
      */
-    function replaceChainImpl(address _impl)
-        external
-        onlyAdmin
-        nonZeroAddr(_impl)
-        mustChangeAddr(questChainImpl, _impl)
-    {
-        // set new quest chain contract implementation address
-        questChainImpl = _impl;
-
-        // log quest chain contract implementation change data
-        emit ImplReplaced(_impl);
-    }
-
-    /**
-     * @dev Assigns a new treasury address
-     * @param _treasury the address of the new DAO treasury
-     * #todo #security #medium fee collection address could be immutable for increased security
-     */
-    function replaceTreasury(address _treasury)
-        external
-        onlyAdmin
-        nonZeroAddr(_treasury)
-        mustChangeAddr(treasury, _treasury)
-    {
-        // set new treasury address
-        treasury = _treasury;
-
-        // log treasury address change data
-        emit TreasuryReplaced(_treasury);
-    }
-
-    /**
-     * @dev Assigns a new payment token address
-     * @param _paymentToken the address of the new payment token
-     * #todo #security #high payment token address could be immutable for increased security
-     */
-    function replacePaymentToken(address _paymentToken)
+    function proposePaymentTokenReplace(address _paymentToken)
         external
         onlyAdmin
         nonZeroAddr(_paymentToken)
-        mustChangeAddr(paymentToken, _paymentToken)
+        mustChangeAddr(proposedPaymentToken, _paymentToken)
     {
-        // set new payment token address
-        paymentToken = _paymentToken;
+        // set proposed paymentToken address
+        proposedPaymentToken = _paymentToken;
+        paymentTokenProposalTimestamp = block.timestamp;
 
-        // log payment token change data
-        emit PaymentTokenReplaced(_paymentToken);
+        // log proposedPaymentToken change data
+        emit PaymentTokenReplaceProposed(_paymentToken);
     }
 
     /**
-     * @dev Change upgrade fee
-     * @param _upgradeFee the address of the new DAO treasury
-     * #todo #security #high payment token address could be immutable for increased security
-     *
-     * #todo - combining calls to replaceUpgradeFee and replaceUpgradeToken could be used maliciously before a user's
-     * #todo - upgrade; effectively allowing QuestChains to steal arbitrary kinds and amounts of tokens
-     * #todo - also could be combined with replaceTreasury to make the funds unavailable to DAO members
+     * @dev Executes the proposed paymentToken replacement
      */
-    function replaceUpgradeFee(uint256 _upgradeFee)
+    function executePaymentTokenReplace()
         external
         onlyAdmin
-        nonZeroUint(_upgradeFee)
-        mustChangeUint(upgradeFee, _upgradeFee)
+        nonZeroAddr(proposedPaymentToken)
+        onlyAfterDelay(paymentTokenProposalTimestamp)
+        mustChangeAddr(proposedPaymentToken, address(paymentToken))
     {
-        // set new upgrade fee amount
-        upgradeFee = _upgradeFee;
+        // replace paymentToken
+        paymentToken = IERC20Token(proposedPaymentToken);
 
-        // log upgrade fee change data
-        emit UpgradeFeeReplaced(_upgradeFee);
+        delete proposedPaymentToken;
+        delete paymentTokenProposalTimestamp;
+
+        // log paymentToken change data
+        emit PaymentTokenReplaced(paymentToken);
+    }
+
+    /**
+     * @dev Proposes a new upgradeFee
+     * @param _upgradeFee the new upgradeFee
+     */
+    function proposeUpgradeFeeReplace(uint256 _upgradeFee)
+        external
+        onlyAdmin
+        mustChangeUint(proposedUpgradeFee, _upgradeFee)
+    {
+        // set proposed upgradeFee
+        proposedUpgradeFee = _upgradeFee;
+        upgradeFeeProposalTimestamp = block.timestamp;
+
+        // log proposedUpgradeFee change data
+        emit UpgradeFeeReplaceProposed(_upgradeFee);
+    }
+
+    /**
+     * @dev Executes the proposed upgradeFee replacement
+     */
+    function executeUpgradeFeeReplace()
+        external
+        onlyAdmin
+        onlyAfterDelay(upgradeFeeProposalTimestamp)
+        mustChangeUint(proposedUpgradeFee, upgradeFee)
+    {
+        // replace upgradeFee
+        upgradeFee = proposedUpgradeFee;
+
+        delete proposedUpgradeFee;
+        delete upgradeFeeProposalTimestamp;
+
+        // log upgradeFee change data
+        emit UpgradeFeeReplaced(upgradeFee);
     }
 
     /**
@@ -241,7 +277,7 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
     function createAndUpgrade(
         QuestChainCommons.QuestChainInfo calldata _info,
         bytes32 _salt
-    ) external returns (address) {
+    ) external nonReentrant returns (address) {
         // deploy new quest chain minimal proxy
         address questChainAddress = _create(_info, _salt);
 
@@ -262,7 +298,7 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
         bytes32 _salt,
         uint256 _deadline,
         bytes calldata _signature
-    ) external returns (address) {
+    ) external nonReentrant returns (address) {
         // deploy new quest chain minimal proxy
         address questChainAddress = _create(_info, _salt);
 
@@ -332,7 +368,7 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
      * @param _salt an arbitrary source of entropy
      */
     function _newClone(bytes32 _salt) internal returns (address) {
-        return Clones.cloneDeterministic(questChainImpl, _salt);
+        return Clones.cloneDeterministic(questChainTemplate, _salt);
     }
 
     /**
@@ -345,10 +381,7 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
         QuestChainCommons.QuestChainInfo calldata _info
     ) internal {
         // assign the quest chain token owner
-        IQuestChainToken(questChainToken).setTokenOwner(
-            questChainCount,
-            _questChainAddress
-        );
+        questChainToken.setTokenOwner(questChainCount, _questChainAddress);
 
         // initialize the quest chain proxy
         IQuestChain(_questChainAddress).init(_info);
@@ -366,11 +399,10 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
     /**
      * @dev Internal function upgrades an existing quest chain and transfers upgrade fee to treasury
      * @param _questChainAddress the new minimal proxy's address
-     * #todo #medium if safeTransfer call returns false; upgrade will not revert
      */
     function _upgradeQuestChain(address _questChainAddress) internal {
         // transfer upgrade fee to the treasury from caller
-        IERC20(paymentToken).safeTransferFrom(msg.sender, treasury, upgradeFee);
+        paymentToken.safeTransferFrom(msg.sender, treasury, upgradeFee);
 
         // assign quest chain as premium
         IQuestChain(_questChainAddress).upgrade();
@@ -396,7 +428,7 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
         );
 
         // permit upgrade fee
-        IERC20Permit(paymentToken).safePermit(
+        paymentToken.safePermit(
             msg.sender,
             address(this),
             upgradeFee,

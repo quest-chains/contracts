@@ -2,6 +2,10 @@
 
 pragma solidity 0.8.16;
 
+//   ╔═╗ ┬ ┬┌─┐┌─┐┌┬┐╔═╗┬ ┬┌─┐┬┌┐┌┌─┐
+//   ║═╬╗│ │├┤ └─┐ │ ║  ├─┤├─┤││││└─┐
+//   ╚═╝╚└─┘└─┘└─┘ ┴ ╚═╝┴ ┴┴ ┴┴┘└┘└─┘
+
 import "../libraries/QuestChainCommons.sol";
 import "./IQuestChainToken.sol";
 
@@ -15,11 +19,7 @@ interface IQuestChain {
 
     event QuestChainInit(string details, string[] quests, bool paused);
     event QuestChainEdited(address editor, string details);
-    event QuestsCreated(
-        address creator,
-        uint256[] questIdList,
-        string[] detailsList
-    );
+    event QuestsCreated(address creator, string[] detailsList);
     event QuestsPaused(
         address editor,
         uint256[] questIdList,

@@ -2,6 +2,10 @@
 
 pragma solidity 0.8.16;
 
+//   ╔═╗ ┬ ┬┌─┐┌─┐┌┬┐╔═╗┬ ┬┌─┐┬┌┐┌┌─┐
+//   ║═╬╗│ │├┤ └─┐ │ ║  ├─┤├─┤││││└─┐
+//   ╚═╝╚└─┘└─┘└─┘ ┴ ╚═╝┴ ┴┴ ┴┴┘└┘└─┘
+
 library QuestChainCommons {
     struct QuestChainInfo {
         address[] owners;

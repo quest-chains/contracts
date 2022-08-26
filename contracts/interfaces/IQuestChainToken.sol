@@ -2,6 +2,10 @@
 
 pragma solidity 0.8.16;
 
+//   ╔═╗ ┬ ┬┌─┐┌─┐┌┬┐╔═╗┬ ┬┌─┐┬┌┐┌┌─┐
+//   ║═╬╗│ │├┤ └─┐ │ ║  ├─┤├─┤││││└─┐
+//   ╚═╝╚└─┘└─┘└─┘ ┴ ╚═╝┴ ┴┴ ┴┴┘└┘└─┘
+
 import "./IQuestChainFactory.sol";
 import "@openzeppelin/contracts/token/ERC1155/extensions/IERC1155MetadataURI.sol";
 
