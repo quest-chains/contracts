@@ -930,8 +930,9 @@ describe('QuestChain', () => {
           1,
         );
     });
+    let questChain: QuestChain;
     it('should revert mint if already minted', async () => {
-      const questChain = await createChain(['1']);
+      questChain = await createChain(['1']);
       await (await questChain.submitProofs([0], ['proof'])).wait();
       await (
         await questChain.reviewProofs([owner.address], [0], [true], ['details'])
@@ -954,6 +955,19 @@ describe('QuestChain', () => {
       const txPromise = questChain.mintToken();
       await expect(txPromise).to.be.revertedWith(
         'QuestChainToken: already minted',
+      );
+    });
+
+    it('should revert transfer of token', async () => {
+      const txPromise = chainToken.safeTransferFrom(
+        signers[0].address,
+        signers[1].address,
+        await questChain.questChainId(),
+        1,
+        '0x',
+      );
+      await expect(txPromise).to.be.revertedWith(
+        'QuestChainToken: cannot transfer',
       );
     });
   });

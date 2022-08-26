@@ -257,22 +257,6 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
     }
 
     /**
-     * @dev Change upgrade fee
-     * @param _upgradeFee the address of the new DAO treasury
-     */
-    function replaceUpgradeFee(uint256 _upgradeFee)
-        external
-        onlyAdmin
-        mustChangeUint(upgradeFee, _upgradeFee)
-    {
-        // set new upgrade fee amount
-        upgradeFee = _upgradeFee;
-
-        // log upgrade fee change data
-        emit UpgradeFeeReplaced(_upgradeFee);
-    }
-
-    /**
      * @dev Deploys a new quest chain minimal proxy
      * @param _info the initialization data struct for our new clone
      * @param _salt an arbitrary source of entropy

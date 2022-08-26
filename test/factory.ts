@@ -473,6 +473,20 @@ describe('QuestChainFactory', () => {
       expect(await chain.premium()).to.equal(false);
     });
 
+    it('should revert upgrade quest chain with permit if invalid signature', async () => {
+      const deadline = ethers.constants.MaxUint256;
+      const signature = '0x';
+
+      const txPromise = chainFactory.upgradeQuestChainWithPermit(
+        chain.address,
+        deadline,
+        signature,
+      );
+      await expect(txPromise).to.be.revertedWith(
+        'QuestChainCommons: bad signature',
+      );
+    });
+
     it('should upgrade quest chain with permit to premium', async () => {
       await (await mockPermitToken.mint(admin, UPGRADE_FEE)).wait();
       const deadline = ethers.constants.MaxUint256;
