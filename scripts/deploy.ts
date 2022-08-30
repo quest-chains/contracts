@@ -27,7 +27,7 @@ async function main() {
   const QuestChain = await ethers.getContractFactory('QuestChain', {});
   const questChain = (await QuestChain.deploy()) as QuestChain;
   await questChain.deployed();
-  console.log('Implementation Address:', questChain.address);
+  console.log('Template Address:', questChain.address);
 
   const QuestChainFactory = await ethers.getContractFactory(
     'QuestChainFactory',
@@ -71,7 +71,7 @@ async function main() {
     version: commitHash,
     factory: questChainFactory.address,
     token: questChainTokenAddress,
-    implemention: questChain.address,
+    template: questChain.address,
     txHash,
     blockNumber: receipt.blockNumber.toString(),
   };
@@ -90,7 +90,7 @@ async function main() {
       address: questChain.address,
       constructorArguments: [],
     });
-    console.log('Verified Implementation');
+    console.log('Verified Template');
 
     await run('verify:verify', {
       address: questChainFactory.address,

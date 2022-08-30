@@ -1,0 +1,9 @@
+{
+  "network": "polygon",
+  "version": "c1fb975",
+  "factory": "0x61cEBDf43a96581E6E144395fBA18f9D1a43e558",
+  "token": "0x01F743fC883C5CD68d69dfe75D46b5A9A1792b97",
+  "template": "0x7f8F6E42C169B294A384F5667c303fd8Eedb3CF3",
+  "txHash": "0x350e00fcac3724745d126dbf08bd2feb152d89b021e5605b2aae44837196da2d",
+  "blockNumber": "32478507"
+}
