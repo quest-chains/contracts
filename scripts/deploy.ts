@@ -42,6 +42,9 @@ async function main() {
   await questChainFactory.deployed();
   console.log('Factory Address:', questChainFactory.address);
 
+  const questChainTokenAddress = await questChainFactory.questChainToken();
+  console.log('Token Address:', questChainTokenAddress);
+
   const txHash = questChainFactory.deployTransaction.hash;
   console.log('Transaction Hash:', txHash);
   const receipt = await deployer.provider.getTransactionReceipt(txHash);
@@ -63,8 +66,6 @@ async function main() {
   if (chainId === 31337) {
     return;
   }
-
-  const questChainTokenAddress = await questChainFactory.questChainToken();
 
   const deploymentInfo = {
     network: network.name,
@@ -102,7 +103,6 @@ async function main() {
         DEFAULT_UPGRADE_FEE,
       ],
     });
-
     console.log('Verified Factory');
 
     await run('verify:verify', {

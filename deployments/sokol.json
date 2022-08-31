@@ -1,9 +1,0 @@
-{
-  "network": "sokol",
-  "version": "c1fb975",
-  "factory": "0x840Bdcd411D1777269B870432f89ddA95fccfd0a",
-  "token": "0x9bae510496c78D79850Ec0eec16F1958AcFE5346",
-  "template": "0x83cc868F7CacF1CCd0F3F228E7678D1b881fDEC8",
-  "txHash": "0xbacc45b220fb75ce3cac29eefa9fa5a4641675d4e821358438b4baad480a0ae6",
-  "blockNumber": "27278891"
-}
