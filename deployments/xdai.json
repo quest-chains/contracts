@@ -1,9 +1,9 @@
 {
   "network": "xdai",
-  "version": "c1fb975",
-  "factory": "0x067B5ccf11Dd606aABb6434371f96CA11f073Bd7",
-  "token": "0x5182888488F0A496231126a7127fb9330Dea7946",
-  "template": "0xca22437040Bc56118a50A6E9FEB46c492D7d3837",
-  "txHash": "0x04ea50733f6ad119aa8e82cbeb427870cebad96a851f63bcc3f862e9c8b8568f",
-  "blockNumber": "23957988"
+  "version": "7059a88",
+  "factory": "0xc78057b02DAd38900E0E6f43DcE6413aEcb558d0",
+  "token": "0xc298fAfcd1D6FE8cA4965c1136DdffEEAF76b31A",
+  "template": "0xEBc3acA02E78c6f113BA16b2A233bF4a5923d814",
+  "txHash": "0x213cb346adce47ddc0356121634b472b4c95919e313b4e75dd6f1bd595d32d8e",
+  "blockNumber": "23975203"
 }
