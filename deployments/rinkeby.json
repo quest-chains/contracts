@@ -3,7 +3,7 @@
   "version": "9b75070",
   "factory": "0x108a6Da1e756E046ceD8e818FdE3c5A5b64B9Ed5",
   "token": "0x98b17a170b039F9e2a8B6a96e14dCc842Eb115D6",
-  "implemention": "0x76968C4dd9394b860E4e5e045D7c21d04A73dd5B",
+  "template": "0x76968C4dd9394b860E4e5e045D7c21d04A73dd5B",
   "txHash": "0xf07316b73c6ce9e7e65ee83d5497657ffbbb23589bdaf94309ac3d98af81ef55",
   "blockNumber": "11268647"
 }

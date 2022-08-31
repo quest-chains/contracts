@@ -966,9 +966,12 @@ describe('QuestChain', () => {
         1,
         '0x',
       );
-      await expect(txPromise).to.be.revertedWith(
-        'QuestChainToken: cannot transfer',
-      );
+      await expect(txPromise).to.be.revertedWith('QuestChainToken: soulbound');
+    });
+
+    it('should revert approval of token', async () => {
+      const txPromise = chainToken.setApprovalForAll(signers[1].address, true);
+      await expect(txPromise).to.be.revertedWith('QuestChainToken: soulbound');
     });
   });
 

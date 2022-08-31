@@ -168,7 +168,18 @@ contract QuestChainToken is IQuestChainToken, ERC1155 {
     ) internal pure override {
         require(
             _to == address(0) || _from == address(0),
-            "QuestChainToken: cannot transfer"
+            "QuestChainToken: soulbound"
         );
+    }
+
+    /**
+     * @dev Prevents approval of the tokens and thus makes them SoulBound
+     */
+    function _setApprovalForAll(
+        address,
+        address,
+        bool
+    ) internal pure override {
+        revert("QuestChainToken: soulbound");
     }
 }
