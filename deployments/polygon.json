@@ -1,9 +1,9 @@
 {
   "network": "polygon",
-  "version": "7059a88",
-  "factory": "0xB52CdE6E0D7F5F5352b6608E5dc66551e5261b22",
-  "token": "0x7947538504615e8E9f7D4843FD4282b7aAFe0CEE",
-  "template": "0x7CeCF0a7B6e764d7B8849bD47E1A92c1806B89aC",
-  "txHash": "0xb4d7a0285efa308f9190cc60098dc7de695b8f919855df2041808040d5b01f72",
-  "blockNumber": "32520449"
+  "version": "c1fb975",
+  "factory": "0x61cEBDf43a96581E6E144395fBA18f9D1a43e558",
+  "token": "0x01F743fC883C5CD68d69dfe75D46b5A9A1792b97",
+  "template": "0x7f8F6E42C169B294A384F5667c303fd8Eedb3CF3",
+  "txHash": "0x350e00fcac3724745d126dbf08bd2feb152d89b021e5605b2aae44837196da2d",
+  "blockNumber": "32478507"
 }
