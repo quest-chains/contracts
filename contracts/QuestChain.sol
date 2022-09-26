@@ -13,6 +13,7 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 
 import "./interfaces/IQuestChain.sol";
+import "./interfaces/ILimiter.sol";
 
 // author: @dan13ram
 
@@ -47,6 +48,9 @@ contract QuestChain is
     uint256 public questChainId;
     // counter for all quests
     uint256 public questCount;
+
+    // TODO add setter for this
+    address public limiterContract;
 
     /********************************
      MAPPING STRUCTS EVENTS MODIFIER
@@ -270,6 +274,13 @@ contract QuestChain is
         uint256[] calldata _questIdList,
         string[] calldata _proofList
     ) external whenNotPaused {
+        if (limiterContract != address(0)) {
+            require(
+                ILimiter(limiterContract).submitProofLimiter(_msgSender()),
+                "QuestChain: limited"
+            );
+        }
+
         uint256 _loopLength = _questIdList.length;
 
         require(_loopLength == _proofList.length, "QuestChain: invalid params");
