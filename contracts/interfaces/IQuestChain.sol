@@ -30,6 +30,7 @@ interface IQuestChain {
         uint256[] questIdList,
         string[] detailsList
     );
+    event SetLimiter(address _limiterContract);
     event QuestProofsSubmitted(
         address quester,
         uint256[] questIdList,

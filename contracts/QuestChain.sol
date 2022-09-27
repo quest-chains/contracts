@@ -32,7 +32,7 @@ contract QuestChain is
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     // role key for the editor role
     bytes32 public constant EDITOR_ROLE = keccak256("EDITOR_ROLE");
-    // role key for the reviwer role
+    // role key for the reviewer role
     bytes32 public constant REVIEWER_ROLE = keccak256("REVIEWER_ROLE");
 
     /********************************
@@ -163,7 +163,7 @@ contract QuestChain is
             _pause();
         }
 
-        // log initalizer data
+        // log initializer data
         emit QuestChainInit(_info.details, _info.quests, _info.paused);
     }
 
@@ -188,6 +188,15 @@ contract QuestChain is
     function edit(string calldata _details) external onlyRole(ADMIN_ROLE) {
         // log edited quest chain data
         emit QuestChainEdited(_msgSender(), _details);
+    }
+
+    // TODO add Natspec
+    function setLimiter(address _limiterContract)
+        external
+        onlyRole(ADMIN_ROLE)
+    {
+        limiterContract = _limiterContract;
+        emit SetLimiter(_limiterContract);
     }
 
     /**
@@ -376,7 +385,7 @@ contract QuestChain is
     }
 
     /**
-     * @dev Public getter to read status of completiong of a quest by a particular quester
+     * @dev Public getter to read status of completion of a quest by a particular quester
      * @param _quester address of quester
      * @param _questId identifier of the quest
      */

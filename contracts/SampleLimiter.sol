@@ -10,10 +10,13 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/ILimiter.sol";
 
 contract SampleLimiter is ILimiter {
-    // TODO add setter
     address public tokenAddress;
-    // TODO add setter
     uint256 public minTokenBalance;
+
+    constructor(address _tokenAddress, uint256 _minTokenBalance) {
+        tokenAddress = _tokenAddress;
+        minTokenBalance = _minTokenBalance;
+    }
 
     function submitProofLimiter(address _sender)
         external
