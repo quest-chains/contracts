@@ -7,8 +7,5 @@ pragma solidity 0.8.16;
 //   ╚═╝╚└─┘└─┘└─┘ ┴ ╚═╝┴ ┴┴ ┴┴┘└┘└─┘
 
 interface ILimiter {
-    function submitProofLimiter(address _sender)
-        external
-        view
-        returns (bool _check);
+    function submitProofLimiter(address _sender) external returns (bool _check);
 }

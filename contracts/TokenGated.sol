@@ -9,7 +9,7 @@ pragma solidity 0.8.16;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/ILimiter.sol";
 
-contract SampleLimiter is ILimiter {
+contract TokenGated is ILimiter {
     address public tokenAddress;
     uint256 public minTokenBalance;
 
@@ -20,7 +20,6 @@ contract SampleLimiter is ILimiter {
 
     function submitProofLimiter(address _sender)
         external
-        view
         returns (bool _check)
     {
         if (IERC20(tokenAddress).balanceOf(_sender) >= minTokenBalance) {
