@@ -17,6 +17,7 @@ import "./interfaces/ILimiter.sol";
 
 // author: @dan13ram
 
+/// @author @dan13ram, @parv3213
 contract QuestChain is
     IQuestChain,
     ReentrancyGuard,
@@ -49,7 +50,7 @@ contract QuestChain is
     // counter for all quests
     uint256 public questCount;
 
-    // TODO add setter for this
+    // address of limiter, if any.
     address public limiterContract;
 
     /********************************
@@ -190,7 +191,10 @@ contract QuestChain is
         emit QuestChainEdited(_msgSender(), _details);
     }
 
-    // TODO add Natspec
+    /**
+     * @notice Admin can decide to add a limiter
+     * @param _limiterContract address of limiter
+     */
     function setLimiter(address _limiterContract)
         external
         onlyRole(ADMIN_ROLE)
