@@ -6,6 +6,8 @@ import { ethers, waffle } from 'hardhat';
 
 import {
   IERC20__factory,
+  LimiterTokenFee,
+  LimiterTokenGated,
   QuestChain,
   QuestChainFactory,
   QuestChainToken,
@@ -1016,6 +1018,217 @@ describe('QuestChain', () => {
           await questChain.questChainId(),
           1,
         );
+    });
+  });
+
+  // Limiter Tests
+  describe('LimiterTokenGated', () => {
+    let limiterChain: QuestChain;
+    let limiterTokenGated: LimiterTokenGated;
+    let minBalance = '100';
+    before('Initialize', async () => {
+      limiterChain = (await createChain([])) as QuestChain;
+      limiterTokenGated = await deploy<LimiterTokenGated>(
+        'LimiterTokenGated',
+        {},
+      );
+    });
+
+    it('addQuestChainDetails: revert when sender is not QuestChain admin', async () => {
+      await expect(
+        limiterTokenGated
+          .connect(signers[1])
+          .addQuestChainDetails(
+            limiterChain.address,
+            limiterChain.address,
+            '1',
+          ),
+      ).to.be.revertedWith('TokenGated: only admin');
+    });
+
+    it('addQuestChainDetails: works when sender is QuestChain admin', async () => {
+      const tx = await limiterTokenGated
+        .connect(owner)
+        .addQuestChainDetails(
+          limiterChain.address,
+          mockToken.address,
+          minBalance,
+        );
+
+      await tx.wait();
+
+      await expect(tx)
+        .to.emit(limiterTokenGated, 'AddQuestChainDetails')
+        .withArgs(
+          limiterChain.address,
+          mockToken.address,
+          minBalance,
+          owner.address,
+        );
+
+      const questChainDetails = await limiterTokenGated.questChainDetails(
+        limiterChain.address,
+      );
+      expect(questChainDetails.tokenAddress).to.equal(mockToken.address);
+      expect(questChainDetails.minTokenBalance).to.equal(minBalance);
+    });
+
+    it('setLimiter: revert when sender is not admin', async () => {
+      await expect(
+        limiterChain.connect(signers[1]).setLimiter(limiterTokenGated.address),
+      ).to.be.revertedWith('AccessControl: account');
+    });
+    it('setLimiter: revert when QuestChain is not premium', async () => {
+      await expect(
+        limiterChain.connect(owner).setLimiter(limiterTokenGated.address),
+      ).to.be.revertedWith('QuestChain: not premium');
+    });
+    it('setLimiter: works when QuestChain is premium', async () => {
+      await mockToken.mock.transferFrom
+        .withArgs(signers[0].address, signers[0].address, '10')
+        .returns(true);
+
+      (await chainFactory.upgradeQuestChain(limiterChain.address)).wait();
+
+      const tx = await limiterChain
+        .connect(owner)
+        .setLimiter(limiterTokenGated.address);
+
+      await tx.wait();
+
+      await expect(tx)
+        .to.emit(limiterChain, 'SetLimiter')
+        .withArgs(limiterTokenGated.address);
+
+      expect(await limiterChain.limiterContract()).to.equal(
+        limiterTokenGated.address,
+      );
+    });
+
+    it('submitProofs: revert when sender does not have minimum balance', async () => {
+      (await limiterChain.createQuests([''])).wait();
+
+      await mockToken.mock.balanceOf.withArgs(signers[0].address).returns(9);
+      await expect(limiterChain.submitProofs(['0'], [''])).to.be.revertedWith(
+        'QuestChain: limited',
+      );
+    });
+
+    it('submitProofs: works when sender has minimum balance or above', async () => {
+      await mockToken.mock.balanceOf
+        .withArgs(signers[0].address)
+        .returns(minBalance);
+      (await limiterChain.submitProofs(['0'], [''])).wait();
+
+      await mockToken.mock.balanceOf
+        .withArgs(signers[0].address)
+        .returns(minBalance + 1);
+      (await limiterChain.submitProofs(['0'], [''])).wait();
+    });
+  });
+
+  describe('LimiterTokenFee', () => {
+    let limiterChain: QuestChain;
+    let limiterTokenFee: LimiterTokenFee;
+    let treasury: SignerWithAddress;
+    let feeAmount = '100';
+    before('Initialize', async () => {
+      treasury = signers[1];
+      limiterChain = (await createChain([])) as QuestChain;
+      limiterTokenFee = await deploy<LimiterTokenFee>('LimiterTokenFee', {});
+    });
+
+    it('addQuestChainDetails: revert when sender is not QuestChain admin', async () => {
+      await expect(
+        limiterTokenFee
+          .connect(signers[1])
+          .addQuestChainDetails(
+            limiterChain.address,
+            limiterChain.address,
+            limiterChain.address,
+            '1',
+          ),
+      ).to.be.revertedWith('TokenGated: only admin');
+    });
+
+    it('addQuestChainDetails: works when sender is QuestChain admin', async () => {
+      const tx = await limiterTokenFee
+        .connect(owner)
+        .addQuestChainDetails(
+          limiterChain.address,
+          mockToken.address,
+          treasury.address,
+          feeAmount,
+        );
+
+      await tx.wait();
+
+      await expect(tx)
+        .to.emit(limiterTokenFee, 'AddQuestChainDetails')
+        .withArgs(
+          limiterChain.address,
+          mockToken.address,
+          treasury.address,
+          feeAmount,
+          owner.address,
+        );
+
+      const questChainDetails = await limiterTokenFee.questChainDetails(
+        limiterChain.address,
+      );
+      expect(questChainDetails.tokenAddress).to.equal(mockToken.address);
+      expect(questChainDetails.treasuryAddress).to.equal(treasury.address);
+      expect(questChainDetails.feeAmount).to.equal(feeAmount);
+    });
+
+    it('setLimiter: revert when sender is not admin', async () => {
+      await expect(
+        limiterChain.connect(signers[1]).setLimiter(limiterTokenFee.address),
+      ).to.be.revertedWith('AccessControl: account');
+    });
+    it('setLimiter: revert when QuestChain is not premium', async () => {
+      await expect(
+        limiterChain.connect(owner).setLimiter(limiterTokenFee.address),
+      ).to.be.revertedWith('QuestChain: not premium');
+    });
+    it('setLimiter: works when QuestChain is premium', async () => {
+      await mockToken.mock.transferFrom
+        .withArgs(signers[0].address, signers[0].address, '10')
+        .returns(true);
+
+      (await chainFactory.upgradeQuestChain(limiterChain.address)).wait();
+
+      const tx = await limiterChain
+        .connect(owner)
+        .setLimiter(limiterTokenFee.address);
+
+      await tx.wait();
+
+      await expect(tx)
+        .to.emit(limiterChain, 'SetLimiter')
+        .withArgs(limiterTokenFee.address);
+
+      expect(await limiterChain.limiterContract()).to.equal(
+        limiterTokenFee.address,
+      );
+    });
+
+    it('submitProofs: revert when sender does not have enough balance', async () => {
+      (await limiterChain.createQuests([''])).wait();
+
+      await mockToken.mock.transferFrom
+        .withArgs(signers[0].address, treasury.address, feeAmount)
+        .returns(false);
+      await expect(limiterChain.submitProofs(['0'], [''])).to.be.revertedWith(
+        'QuestChain: limited',
+      );
+    });
+
+    it('submitProofs: works when sender has minimum balance or above', async () => {
+      await mockToken.mock.transferFrom
+        .withArgs(signers[0].address, treasury.address, feeAmount)
+        .returns(true);
+      (await limiterChain.submitProofs(['0'], [''])).wait();
     });
   });
 });
