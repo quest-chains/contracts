@@ -24,6 +24,7 @@ contract LimiterTokenFee is ILimiter {
     event AddQuestChainDetails(
         address _questChain,
         address _tokenAddress,
+        address _treasuryAddress,
         uint256 _feeAmount,
         address _sender
     );
@@ -46,6 +47,7 @@ contract LimiterTokenFee is ILimiter {
         emit AddQuestChainDetails(
             _questChain,
             _tokenAddress,
+            _treasuryAddress,
             _feeAmount,
             msg.sender
         );
