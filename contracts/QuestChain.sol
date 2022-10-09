@@ -198,6 +198,7 @@ contract QuestChain is
     function setLimiter(address _limiterContract)
         external
         onlyRole(ADMIN_ROLE)
+        onlyPremium
     {
         limiterContract = _limiterContract;
         emit SetLimiter(_limiterContract);
