@@ -10,11 +10,16 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/ILimiter.sol";
 import "./interfaces/IQuestChain.sol";
 import "@openzeppelin/contracts/access/IAccessControl.sol";
+import {MultiToken, Category} from "./libraries/MultiToken.sol";
 
 /// @author @parv3213
 contract LimiterTokenGated is ILimiter {
+    using MultiToken for MultiToken.Asset;
+
     struct QuestChainDetails {
         address tokenAddress;
+        Category category;
+        uint256 nftId;
         uint256 minTokenBalance;
     }
     mapping(address => QuestChainDetails) public questChainDetails;
@@ -31,6 +36,8 @@ contract LimiterTokenGated is ILimiter {
     function addQuestChainDetails(
         address _questChain,
         address _tokenAddress,
+        Category _category,
+        uint256 _nftId,
         uint256 _minBalance
     ) external {
         require(
@@ -39,6 +46,8 @@ contract LimiterTokenGated is ILimiter {
         );
         questChainDetails[_questChain] = QuestChainDetails(
             _tokenAddress,
+            _category,
+            _nftId,
             _minBalance
         );
         emit AddQuestChainDetails(
@@ -49,16 +58,19 @@ contract LimiterTokenGated is ILimiter {
         );
     }
 
-    function submitProofLimiter(address _sender)
-        external
-        returns (bool _check)
-    {
+    function submitProofLimiter(address _sender) external {
         QuestChainDetails memory _details = questChainDetails[msg.sender];
-        if (
-            IERC20(_details.tokenAddress).balanceOf(_sender) >=
-            _details.minTokenBalance
-        ) {
-            _check = true;
-        }
+
+        require(
+            MultiToken
+                .Asset(
+                    _details.tokenAddress,
+                    _details.category,
+                    0,
+                    _details.nftId
+                )
+                .balanceOf(_sender) >= _details.minTokenBalance,
+            "LimiterTokenGated: limited"
+        );
     }
 }

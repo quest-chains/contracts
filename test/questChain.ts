@@ -1041,6 +1041,8 @@ describe('QuestChain', () => {
           .addQuestChainDetails(
             limiterChain.address,
             limiterChain.address,
+            0,
+            0,
             '1',
           ),
       ).to.be.revertedWith('TokenGated: only admin');
@@ -1052,6 +1054,8 @@ describe('QuestChain', () => {
         .addQuestChainDetails(
           limiterChain.address,
           mockToken.address,
+          0,
+          0,
           minBalance,
         );
 
@@ -1110,7 +1114,7 @@ describe('QuestChain', () => {
 
       await mockToken.mock.balanceOf.withArgs(signers[0].address).returns(9);
       await expect(limiterChain.submitProofs(['0'], [''])).to.be.revertedWith(
-        'QuestChain: limited',
+        'LimiterTokenGated: limited',
       );
     });
 
@@ -1145,6 +1149,8 @@ describe('QuestChain', () => {
           .addQuestChainDetails(
             limiterChain.address,
             limiterChain.address,
+            0,
+            0,
             limiterChain.address,
             '1',
           ),
@@ -1157,6 +1163,8 @@ describe('QuestChain', () => {
         .addQuestChainDetails(
           limiterChain.address,
           mockToken.address,
+          0,
+          0,
           treasury.address,
           feeAmount,
         );
@@ -1220,7 +1228,7 @@ describe('QuestChain', () => {
         .withArgs(signers[0].address, treasury.address, feeAmount)
         .returns(false);
       await expect(limiterChain.submitProofs(['0'], [''])).to.be.revertedWith(
-        'QuestChain: limited',
+        'SafeERC20: ERC20 operation did not succeed',
       );
     });
 

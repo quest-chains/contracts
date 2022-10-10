@@ -6,14 +6,18 @@ pragma solidity 0.8.16;
 //   ║═╬╗│ │├┤ └─┐ │ ║  ├─┤├─┤││││└─┐
 //   ╚═╝╚└─┘└─┘└─┘ ┴ ╚═╝┴ ┴┴ ┴┴┘└┘└─┘
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/ILimiter.sol";
 import "@openzeppelin/contracts/access/IAccessControl.sol";
+import {MultiToken, Category} from "./libraries/MultiToken.sol";
 
 /// @author @parv3213
 contract LimiterTokenFee is ILimiter {
+    using MultiToken for MultiToken.Asset;
+
     struct QuestChainDetails {
         address tokenAddress;
+        Category category;
+        uint256 nftId;
         address treasuryAddress;
         uint256 feeAmount;
     }
@@ -32,6 +36,8 @@ contract LimiterTokenFee is ILimiter {
     function addQuestChainDetails(
         address _questChain,
         address _tokenAddress,
+        Category _category,
+        uint256 _nftId,
         address _treasuryAddress,
         uint256 _feeAmount
     ) external {
@@ -41,6 +47,8 @@ contract LimiterTokenFee is ILimiter {
         );
         questChainDetails[_questChain] = QuestChainDetails(
             _tokenAddress,
+            _category,
+            _nftId,
             _treasuryAddress,
             _feeAmount
         );
@@ -53,14 +61,16 @@ contract LimiterTokenFee is ILimiter {
         );
     }
 
-    function submitProofLimiter(address _sender) external returns (bool) {
+    function submitProofLimiter(address _sender) external {
         QuestChainDetails memory _details = questChainDetails[msg.sender];
 
-        return
-            IERC20(_details.tokenAddress).transferFrom(
-                _sender,
-                _details.treasuryAddress,
-                _details.feeAmount
-            );
+        MultiToken
+            .Asset(
+                _details.tokenAddress,
+                _details.category,
+                _details.feeAmount,
+                _details.nftId
+            )
+            .transferAssetFrom(_sender, _details.treasuryAddress);
     }
 }

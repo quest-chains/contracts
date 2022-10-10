@@ -289,10 +289,7 @@ contract QuestChain is
         string[] calldata _proofList
     ) external whenNotPaused {
         if (limiterContract != address(0)) {
-            require(
-                ILimiter(limiterContract).submitProofLimiter(_msgSender()),
-                "QuestChain: limited"
-            );
+            ILimiter(limiterContract).submitProofLimiter(_msgSender());
         }
 
         uint256 _loopLength = _questIdList.length;
