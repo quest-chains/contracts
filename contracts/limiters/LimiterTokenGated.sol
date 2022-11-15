@@ -7,10 +7,10 @@ pragma solidity 0.8.16;
 //   ╚═╝╚└─┘└─┘└─┘ ┴ ╚═╝┴ ┴┴ ┴┴┘└┘└─┘
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./interfaces/ILimiter.sol";
-import "./interfaces/IQuestChain.sol";
+import "../interfaces/ILimiter.sol";
+import "../interfaces/IQuestChain.sol";
 import "@openzeppelin/contracts/access/IAccessControl.sol";
-import {MultiToken, Category} from "./libraries/MultiToken.sol";
+import {MultiToken, Category} from "../libraries/MultiToken.sol";
 
 /// @author @parv3213
 contract LimiterTokenGated is ILimiter {

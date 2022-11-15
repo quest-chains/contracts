@@ -6,9 +6,9 @@ pragma solidity 0.8.16;
 //   ║═╬╗│ │├┤ └─┐ │ ║  ├─┤├─┤││││└─┐
 //   ╚═╝╚└─┘└─┘└─┘ ┴ ╚═╝┴ ┴┴ ┴┴┘└┘└─┘
 
-import "./interfaces/ILimiter.sol";
+import "../interfaces/ILimiter.sol";
 import "@openzeppelin/contracts/access/IAccessControl.sol";
-import {MultiToken, Category} from "./libraries/MultiToken.sol";
+import {MultiToken, Category} from "../libraries/MultiToken.sol";
 
 /// @author @parv3213
 contract LimiterTokenFee is ILimiter {
