@@ -289,7 +289,10 @@ contract QuestChain is
         string[] calldata _proofList
     ) external whenNotPaused {
         if (limiterContract != address(0)) {
-            ILimiter(limiterContract).submitProofLimiter(_msgSender());
+            ILimiter(limiterContract).submitProofLimiter(
+                _msgSender(),
+                _questIdList
+            );
         }
 
         uint256 _loopLength = _questIdList.length;
@@ -359,6 +362,7 @@ contract QuestChain is
     /**
      * @dev Mints NFT to the msg.sender if they have completed all quests
      */
+
     function mintToken() external {
         require(questCount > 0, "QuestChain: no quests found");
         for (uint256 questId = 0; questId < questCount; questId = questId + 1) {

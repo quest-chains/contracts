@@ -7,5 +7,8 @@ pragma solidity 0.8.16;
 //   ╚═╝╚└─┘└─┘└─┘ ┴ ╚═╝┴ ┴┴ ┴┴┘└┘└─┘
 
 interface ILimiter {
-    function submitProofLimiter(address _sender) external;
+    function submitProofLimiter(
+        address _sender,
+        uint256[] calldata _questIdList
+    ) external;
 }

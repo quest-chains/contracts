@@ -58,7 +58,10 @@ contract LimiterTokenGated is ILimiter {
         );
     }
 
-    function submitProofLimiter(address _sender) external {
+    function submitProofLimiter(
+        address _sender,
+        uint256[] calldata /* _questIdList */
+    ) external {
         QuestChainDetails memory _details = questChainDetails[msg.sender];
 
         require(
