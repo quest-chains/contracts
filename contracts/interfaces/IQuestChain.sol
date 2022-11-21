@@ -17,13 +17,21 @@ interface IQuestChain {
         fail
     }
 
+    struct QuestDetails {
+        // pause status for each quest
+        bool paused;
+        bool optional;
+        // TODO think of a better term
+        bool noReview;
+    }
+
     event QuestChainInit(string details, string[] quests, bool paused);
     event QuestChainEdited(address editor, string details);
     event QuestsCreated(address creator, string[] detailsList);
-    event QuestsPaused(
+    event ConfiguredQuests(
         address editor,
         uint256[] questIdList,
-        bool[] pausedList
+        QuestDetails[] _questDetails
     );
     event QuestsEdited(
         address editor,
@@ -54,13 +62,13 @@ interface IQuestChain {
     function createQuests(string[] calldata _detailsList) external;
 
     function editQuests(
-        uint256[] calldata _questidlist,
-        string[] calldata _detailslist
+        uint256[] calldata _questIdList,
+        string[] calldata _detailsList
     ) external;
 
-    function pauseQuests(
-        uint256[] calldata _questidlist,
-        bool[] calldata _pausedlist
+    function configureQuests(
+        uint256[] calldata _questIdList,
+        QuestDetails[] calldata _questDetails
     ) external;
 
     function submitProofs(
