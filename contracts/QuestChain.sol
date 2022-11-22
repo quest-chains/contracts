@@ -15,8 +15,6 @@ import "@openzeppelin/contracts/utils/Context.sol";
 import "./interfaces/IQuestChain.sol";
 import "./interfaces/ILimiter.sol";
 
-// author: @dan13ram
-
 /// @author @dan13ram, @parv3213
 contract QuestChain is
     IQuestChain,

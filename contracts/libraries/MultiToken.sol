@@ -1,5 +1,17 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+
+/*
+
+The library defines a token asset as a struct of token identifiers. It wraps transfer, allowance & balance check calls of the following token standards:
+- ERC20
+- ERC721
+- ERC1155
+Unifying the function calls used within the PWN context (not having to worry about handling those individually).
+
+Read more: https://github.com/PWNFinance/MultiToken
+
+*/
+pragma solidity 0.8.16;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
