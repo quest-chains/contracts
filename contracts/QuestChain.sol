@@ -13,9 +13,9 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 
 import "./interfaces/IQuestChain.sol";
+import "./interfaces/ILimiter.sol";
 
-// author: @dan13ram
-
+/// @author @dan13ram, @parv3213
 contract QuestChain is
     IQuestChain,
     ReentrancyGuard,
@@ -31,7 +31,7 @@ contract QuestChain is
     bytes32 public constant ADMIN_ROLE = keccak256("ADMIN_ROLE");
     // role key for the editor role
     bytes32 public constant EDITOR_ROLE = keccak256("EDITOR_ROLE");
-    // role key for the reviwer role
+    // role key for the reviewer role
     bytes32 public constant REVIEWER_ROLE = keccak256("REVIEWER_ROLE");
 
     /********************************
@@ -47,6 +47,9 @@ contract QuestChain is
     uint256 public questChainId;
     // counter for all quests
     uint256 public questCount;
+
+    // address of limiter, if any.
+    address public limiterContract;
 
     /********************************
      MAPPING STRUCTS EVENTS MODIFIER
@@ -159,7 +162,7 @@ contract QuestChain is
             _pause();
         }
 
-        // log initalizer data
+        // log initializer data
         emit QuestChainInit(_info.details, _info.quests, _info.paused);
     }
 
@@ -184,6 +187,19 @@ contract QuestChain is
     function edit(string calldata _details) external onlyRole(ADMIN_ROLE) {
         // log edited quest chain data
         emit QuestChainEdited(_msgSender(), _details);
+    }
+
+    /**
+     * @notice Admin can decide to add a limiter
+     * @param _limiterContract address of limiter
+     */
+    function setLimiter(address _limiterContract)
+        external
+        onlyRole(ADMIN_ROLE)
+        onlyPremium
+    {
+        limiterContract = _limiterContract;
+        emit SetLimiter(_limiterContract);
     }
 
     /**
@@ -270,6 +286,13 @@ contract QuestChain is
         uint256[] calldata _questIdList,
         string[] calldata _proofList
     ) external whenNotPaused {
+        if (limiterContract != address(0)) {
+            ILimiter(limiterContract).submitProofLimiter(
+                _msgSender(),
+                _questIdList
+            );
+        }
+
         uint256 _loopLength = _questIdList.length;
 
         require(_loopLength == _proofList.length, "QuestChain: invalid params");
@@ -337,6 +360,7 @@ contract QuestChain is
     /**
      * @dev Mints NFT to the msg.sender if they have completed all quests
      */
+
     function mintToken() external {
         require(questCount > 0, "QuestChain: no quests found");
         for (uint256 questId = 0; questId < questCount; questId = questId + 1) {
@@ -365,7 +389,7 @@ contract QuestChain is
     }
 
     /**
-     * @dev Public getter to read status of completiong of a quest by a particular quester
+     * @dev Public getter to read status of completion of a quest by a particular quester
      * @param _quester address of quester
      * @param _questId identifier of the quest
      */
