@@ -21,8 +21,7 @@ interface IQuestChain {
         // pause status for each quest
         bool paused;
         bool optional;
-        // TODO think of a better term
-        bool noReview;
+        bool skipReview;
     }
 
     event QuestChainInit(string details, string[] quests, bool paused);

@@ -273,7 +273,8 @@ contract QuestChain is
 
             questDetails[_questIdList[i]].paused = _questDetails[i].paused;
             questDetails[_questIdList[i]].optional = _questDetails[i].optional;
-            questDetails[_questIdList[i]].noReview = _questDetails[i].noReview;
+            questDetails[_questIdList[i]].skipReview = _questDetails[i]
+                .skipReview;
 
             unchecked {
                 ++i;
@@ -469,7 +470,7 @@ contract QuestChain is
             "QuestChain: already passed"
         );
 
-        questDetails[_questId].noReview
+        questDetails[_questId].skipReview
             ? _questStatus[_msgSender()][_questId] = Status.pass
             : _questStatus[_msgSender()][_questId] = Status.review;
     }
