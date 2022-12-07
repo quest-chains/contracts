@@ -30,14 +30,14 @@ interface IQuestChain {
     event ConfiguredQuests(
         address editor,
         uint256[] questIdList,
-        QuestDetails[] _questDetails
+        QuestDetails[] questDetails
     );
     event QuestsEdited(
         address editor,
         uint256[] questIdList,
         string[] detailsList
     );
-    event SetLimiter(address _limiterContract);
+    event SetLimiter(address limiterContract);
     event QuestProofsSubmitted(
         address quester,
         uint256[] questIdList,
