@@ -81,22 +81,6 @@ contract QuestChain is
     }
 
     /**
-     * @dev Modifier to make a function callable only when the quest is not paused
-     */
-    modifier whenQuestNotPaused(uint256 _questId) {
-        require(!questDetails[_questId].paused, "QuestChain: quest paused");
-        _;
-    }
-
-    /**
-     * @dev Modifier to make a function callable only when the quest is paused
-     */
-    modifier whenQuestPaused(uint256 _questId) {
-        require(questDetails[_questId].paused, "QuestChain: quest not paused");
-        _;
-    }
-
-    /**
      * @dev Modifier to make a function callable only when the quest is valid
      */
     modifier validQuest(uint256 _questId) {
@@ -460,11 +444,8 @@ contract QuestChain is
      * @dev internal function to update status of quest to review
      * @param _questId identifier of quest
      */
-    function _submitProof(uint256 _questId)
-        internal
-        whenQuestNotPaused(_questId)
-        validQuest(_questId)
-    {
+    function _submitProof(uint256 _questId) internal validQuest(_questId) {
+        require(!questDetails[_questId].paused, "QuestChain: quest paused");
         require(
             _questStatus[_msgSender()][_questId] != Status.pass,
             "QuestChain: already passed"
