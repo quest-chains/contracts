@@ -255,10 +255,11 @@ contract QuestChain is
                 "QuestChain: quest not found"
             );
 
-            questDetails[_questIdList[i]].paused = _questDetails[i].paused;
-            questDetails[_questIdList[i]].optional = _questDetails[i].optional;
-            questDetails[_questIdList[i]].skipReview = _questDetails[i]
-                .skipReview;
+            questDetails[_questIdList[i]] = QuestDetails(
+                _questDetails[i].paused,
+                _questDetails[i].optional,
+                _questDetails[i].skipReview
+            );
 
             unchecked {
                 ++i;
