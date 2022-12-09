@@ -1104,6 +1104,17 @@ describe('QuestChain', () => {
       questChain = await createChain(['1', '2', '3']);
     });
 
+    it('Should revert to configure non-existed quest', async () => {
+      await expect(
+        questChain.configureQuests(
+          [3],
+          [
+            { paused: false, optional: false, skipReview: true }, // skipReview is true
+          ],
+        ),
+      ).to.be.revertedWith('QuestChain: quest not found');
+    });
+
     it('Set quests as skipReview, optional and paused, respectively', async () => {
       const questIdList = [0, 1, 2];
       const questDetailsList = [
