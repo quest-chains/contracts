@@ -356,8 +356,8 @@ contract QuestChain is
         require(questCount > 0, "QuestChain: no quests found");
         for (uint256 _questId; _questId < questCount; ++_questId) {
             require(
-                questDetails[_questId].paused ||
-                    questDetails[_questId].optional ||
+                questDetails[_questId].optional ||
+                    questDetails[_questId].paused ||
                     _questStatus[_msgSender()][_questId] == Status.pass,
                 "QuestChain: chain incomplete"
             );
