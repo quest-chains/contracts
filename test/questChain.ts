@@ -1203,6 +1203,69 @@ describe('QuestChain', () => {
           1,
         );
     });
+
+    it('should revert mintToken if no quest is reviewed (if all quests are optional)', async () => {
+      const questIdList = [0, 1, 2];
+      const questDetailsList = [
+        { paused: false, optional: true, skipReview: true }, // skipReview and optional is true
+        { paused: false, optional: true, skipReview: true }, // skipReview and optional is true
+        { paused: false, optional: true, skipReview: true }, // skipReview and optional is true
+      ];
+
+      await (
+        await questChain.configureQuests(questIdList, questDetailsList)
+      ).wait();
+
+      const tx = questChain.connect(signers[1]).mintToken();
+      await expect(tx).to.be.revertedWith('QuestChain: no successful review');
+    });
+
+    it('should mintToken if even one quest is reviewed (if all quests are optional)', async () => {
+      //  Let's say if signer-1 passes one quests
+      const questIdList = [0];
+      const detailsList = [''];
+      await (
+        await questChain
+          .connect(signers[1])
+          .submitProofs(questIdList, detailsList)
+      ).wait();
+
+      const tx = await questChain.connect(signers[1]).mintToken();
+      await tx.wait();
+
+      const questChainToken = await getContractAt<QuestChainToken>(
+        'QuestChainToken',
+        await questChain.questChainToken(),
+      );
+      await expect(tx).to.emit(questChainToken, 'TransferSingle');
+    });
+
+    it('should mintToken if all required quests are reviewed (if all other quests are optional)', async () => {
+      const questIdList = [0];
+      const questDetailsList = [
+        { paused: false, optional: false, skipReview: true }, // skipReview is true
+      ];
+
+      await (
+        await questChain.configureQuests(questIdList, questDetailsList)
+      ).wait();
+
+      const detailsList = [''];
+      await (
+        await questChain
+          .connect(signers[2])
+          .submitProofs(questIdList, detailsList)
+      ).wait();
+
+      const tx = await questChain.connect(signers[2]).mintToken();
+      await tx.wait();
+
+      const questChainToken = await getContractAt<QuestChainToken>(
+        'QuestChainToken',
+        await questChain.questChainToken(),
+      );
+      await expect(tx).to.emit(questChainToken, 'TransferSingle');
+    });
   });
 
   // Limiter Tests
