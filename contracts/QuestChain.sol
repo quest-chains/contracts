@@ -355,7 +355,7 @@ contract QuestChain is
     function mintToken() external {
         require(questCount > 0, "QuestChain: no quests found");
 
-        bool atLeastOneRequiredQuest;
+        bool atLeastOnePassed;
 
         for (uint256 _questId; _questId < questCount; ++_questId) {
             require(
@@ -365,13 +365,13 @@ contract QuestChain is
                 "QuestChain: chain incomplete"
             );
             if (
-                !atLeastOneRequiredQuest &&
+                !atLeastOnePassed &&
                 // Checks if at least one quest passed.
                 _questStatus[_msgSender()][_questId] == Status.pass
-            ) atLeastOneRequiredQuest = true;
+            ) atLeastOnePassed = true;
         }
 
-        require(atLeastOneRequiredQuest, "QuestChain: no successful review");
+        require(atLeastOnePassed, "QuestChain: no successful review");
         questChainToken.mint(_msgSender(), questChainId);
     }
 
