@@ -55,8 +55,7 @@ contract QuestChain is
      MAPPING STRUCTS EVENTS MODIFIER
      *******************************/
 
-    // pause status for each quest
-    mapping(uint256 => bool) public questPaused;
+    mapping(uint256 => QuestDetails) public questDetails;
     // quest completion status for each quest for each user account
     mapping(address => mapping(uint256 => Status)) private _questStatus;
 
@@ -76,22 +75,6 @@ contract QuestChain is
      */
     modifier onlyPremium() {
         require(premium, "QuestChain: not premium");
-        _;
-    }
-
-    /**
-     * @dev Modifier to make a function callable only when the quest is not paused
-     */
-    modifier whenQuestNotPaused(uint256 _questId) {
-        require(!questPaused[_questId], "QuestChain: quest paused");
-        _;
-    }
-
-    /**
-     * @dev Modifier to make a function callable only when the quest is paused
-     */
-    modifier whenQuestPaused(uint256 _questId) {
-        require(questPaused[_questId], "QuestChain: quest not paused");
         _;
     }
 
@@ -250,31 +233,37 @@ contract QuestChain is
         emit QuestsEdited(_msgSender(), _questIdList, _detailsList);
     }
 
-    /**
-     * @dev Pause or Unpause particular quests in quest chain
-     * @param _questIdList list of quest ids of the quests to be edited
-     * @param _pausedList list of pause booleans for each quest
-     */
-    function pauseQuests(
+    // TODO add Natspec
+    function configureQuests(
         uint256[] calldata _questIdList,
-        bool[] calldata _pausedList
+        QuestDetails[] calldata _questDetails
     ) external onlyRole(EDITOR_ROLE) {
         uint256 _loopLength = _questIdList.length;
+
+        // Check if length of questIdList equals questDetailsList
         require(
-            _loopLength == _pausedList.length,
+            _loopLength == _questDetails.length,
             "QuestChain: invalid params"
         );
+
         for (uint256 i; i < _loopLength; ) {
-            if (_pausedList[i]) {
-                _pauseQuest(_questIdList[i]);
-            } else {
-                _unpauseQuest(_questIdList[i]);
-            }
+            // Check if quest is valid
+            require(
+                _questIdList[i] < questCount,
+                "QuestChain: quest not found"
+            );
+
+            questDetails[_questIdList[i]] = QuestDetails(
+                _questDetails[i].paused,
+                _questDetails[i].optional,
+                _questDetails[i].skipReview
+            );
+
             unchecked {
                 ++i;
             }
         }
-        emit QuestsPaused(_msgSender(), _questIdList, _pausedList);
+        emit ConfiguredQuests(_msgSender(), _questIdList, _questDetails);
     }
 
     /**
@@ -363,13 +352,24 @@ contract QuestChain is
 
     function mintToken() external {
         require(questCount > 0, "QuestChain: no quests found");
-        for (uint256 questId = 0; questId < questCount; questId = questId + 1) {
+
+        bool atLeastOnePassed;
+
+        for (uint256 _questId; _questId < questCount; ++_questId) {
             require(
-                questPaused[questId] ||
-                    _questStatus[_msgSender()][questId] == Status.pass,
+                questDetails[_questId].optional ||
+                    questDetails[_questId].paused ||
+                    _questStatus[_msgSender()][_questId] == Status.pass,
                 "QuestChain: chain incomplete"
             );
+            if (
+                !atLeastOnePassed &&
+                // Checks if at least one quest passed.
+                _questStatus[_msgSender()][_questId] == Status.pass
+            ) atLeastOnePassed = true;
         }
+
+        require(atLeastOnePassed, "QuestChain: no successful review");
         questChainToken.mint(_msgSender(), questChainId);
     }
 
@@ -453,17 +453,16 @@ contract QuestChain is
      * @dev internal function to update status of quest to review
      * @param _questId identifier of quest
      */
-    function _submitProof(uint256 _questId)
-        internal
-        whenQuestNotPaused(_questId)
-        validQuest(_questId)
-    {
+    function _submitProof(uint256 _questId) internal validQuest(_questId) {
+        require(!questDetails[_questId].paused, "QuestChain: quest paused");
         require(
             _questStatus[_msgSender()][_questId] != Status.pass,
             "QuestChain: already passed"
         );
 
-        _questStatus[_msgSender()][_questId] = Status.review;
+        questDetails[_questId].skipReview
+            ? _questStatus[_msgSender()][_questId] = Status.pass
+            : _questStatus[_msgSender()][_questId] = Status.review;
     }
 
     /**
@@ -492,29 +491,5 @@ contract QuestChain is
     function _setTokenURI(string memory _tokenURI) internal {
         questChainToken.setTokenURI(questChainId, _tokenURI);
         emit QuestChainTokenURIUpdated(_tokenURI);
-    }
-
-    /**
-     * @dev internal function to pause quest
-     * @param _questId identifier of quest
-     */
-    function _pauseQuest(uint256 _questId)
-        internal
-        validQuest(_questId)
-        whenQuestNotPaused(_questId)
-    {
-        questPaused[_questId] = true;
-    }
-
-    /**
-     * @dev internal function to unpause quest
-     * @param _questId identifier of quest
-     */
-    function _unpauseQuest(uint256 _questId)
-        internal
-        validQuest(_questId)
-        whenQuestPaused(_questId)
-    {
-        questPaused[_questId] = false;
     }
 }

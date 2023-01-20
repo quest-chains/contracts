@@ -785,51 +785,128 @@ describe('QuestChain', () => {
 
   describe('pauseQuests', async () => {
     it('should pause the list of quests', async () => {
-      expect(await chain.questPaused(0)).to.equal(false);
-      expect(await chain.questPaused(1)).to.equal(false);
+      expect((await chain.questDetails(0)).paused).to.equal(false);
+      expect((await chain.questDetails(1)).paused).to.equal(false);
 
-      const tx = await chain.pauseQuests([0, 1], [true, true]);
-      await tx.wait();
+      const questIdList = [0, 1];
+      const questDetailsList = [
+        { paused: true, optional: false, skipReview: false },
+        { paused: true, optional: false, skipReview: false },
+      ];
 
-      await expect(tx)
-        .to.emit(chain, 'QuestsPaused')
-        .withArgs(owner.address, [0, 1], [true, true]);
+      const tx = await chain.configureQuests(questIdList, questDetailsList);
+      const receipt = await tx.wait();
 
-      expect(await chain.questPaused(0)).to.equal(true);
-      expect(await chain.questPaused(1)).to.equal(true);
+      expect(
+        receipt.events?.some(event => {
+          if (event.event === 'ConfiguredQuests') {
+            if (
+              event.data ===
+              ethers.utils.defaultAbiCoder.encode(
+                ['address', 'uint256[]', '(bool,bool,bool)[]'],
+                [
+                  owner.address,
+                  questIdList,
+                  questDetailsList.map(questDetails =>
+                    Object.values(questDetails),
+                  ),
+                ],
+              )
+            )
+              return true;
+          }
+        }),
+      ).to.equal(true);
+
+      // FIXME cannot compare like this, hence the code above
+      // await expect(tx)
+      //   .to.emit(chain, 'ConfiguredQuests')
+      //   .withArgs(
+      //     owner.address,
+      //     questIdList,
+      //     questDetailsList.map(questDetails => Object.values(questDetails)),
+      //   );
+
+      expect((await chain.questDetails(0)).paused).to.equal(true);
+      expect((await chain.questDetails(1)).paused).to.equal(true);
     });
 
     it('should unpause/pause the list of quests', async () => {
-      expect(await chain.questPaused(0)).to.equal(true);
-      expect(await chain.questPaused(1)).to.equal(true);
-      expect(await chain.questPaused(2)).to.equal(false);
+      expect((await chain.questDetails(0)).paused).to.equal(true);
+      expect((await chain.questDetails(1)).paused).to.equal(true);
+      expect((await chain.questDetails(2)).paused).to.equal(false);
 
-      const tx = await chain.pauseQuests([0, 1, 2], [false, false, true]);
-      await tx.wait();
+      const questIdList = [0, 1, 2];
+      const questDetailsList = [
+        { paused: false, optional: false, skipReview: false },
+        { paused: false, optional: false, skipReview: false },
+        { paused: true, optional: false, skipReview: false },
+      ];
 
-      await expect(tx)
-        .to.emit(chain, 'QuestsPaused')
-        .withArgs(owner.address, [0, 1, 2], [false, false, true]);
+      const tx = await chain.configureQuests(questIdList, questDetailsList);
+      const receipt = await tx.wait();
 
-      expect(await chain.questPaused(0)).to.equal(false);
-      expect(await chain.questPaused(1)).to.equal(false);
-      expect(await chain.questPaused(2)).to.equal(true);
+      expect(
+        receipt.events?.some(event => {
+          if (event.event === 'ConfiguredQuests') {
+            if (
+              event.data ===
+              ethers.utils.defaultAbiCoder.encode(
+                ['address', 'uint256[]', '(bool,bool,bool)[]'],
+                [
+                  owner.address,
+                  questIdList,
+                  questDetailsList.map(questDetails =>
+                    Object.values(questDetails),
+                  ),
+                ],
+              )
+            )
+              return true;
+          }
+        }),
+      ).to.equal(true);
+
+      // await expect(tx)
+      //   .to.emit(chain, 'ConfiguredQuests')
+      //   .withArgs(owner.address, questIdList, questDetailsList);
+
+      expect((await chain.questDetails(0)).paused).to.equal(false);
+      expect((await chain.questDetails(1)).paused).to.equal(false);
+      expect((await chain.questDetails(2)).paused).to.equal(true);
     });
 
-    it('should revert unpause quest if unpaused', async () => {
-      const tx = chain.pauseQuests([0], [false]);
+    it('should unpause quest if unpaused', async () => {
+      const questIdList = [0];
+      const questDetailsList = [
+        { paused: false, optional: false, skipReview: false },
+      ];
 
-      await expect(tx).to.be.revertedWith(`QuestChain: quest not paused`);
+      const tx = chain.configureQuests(questIdList, questDetailsList);
+
+      await expect(tx).to.not.be.reverted;
     });
 
-    it('should revert pause quest if paused', async () => {
-      const tx = chain.pauseQuests([2], [true]);
+    it('should pause quest if paused', async () => {
+      const questIdList = [2];
+      const questDetailsList = [
+        { paused: true, optional: false, skipReview: false },
+      ];
 
-      await expect(tx).to.be.revertedWith(`QuestChain: quest paused`);
+      const tx = chain.configureQuests(questIdList, questDetailsList);
+
+      await expect(tx).to.not.be.reverted;
     });
 
     it('should revert pause quest if not owner', async () => {
-      const tx = chain.connect(signers[5]).pauseQuests([0], [true]);
+      const questIdList = [5];
+      const questDetailsList = [
+        { paused: true, optional: false, skipReview: false },
+      ];
+
+      const tx = chain
+        .connect(signers[5])
+        .configureQuests(questIdList, questDetailsList);
 
       await expect(tx).to.be.revertedWith(
         `AccessControl: account ${signers[5].address.toLowerCase()} is missing role ${EDITOR_ROLE}`,
@@ -837,16 +914,15 @@ describe('QuestChain', () => {
     });
 
     it('should revert pause quest if invalid params', async () => {
-      const tx = chain.pauseQuests([0], []);
-
+      const tx = chain.configureQuests([0], []);
       await expect(tx).to.be.revertedWith('QuestChain: invalid params');
     });
 
     it('should revert submitProofs when paused', async () => {
-      expect(await chain.questPaused(2)).to.equal(true);
+      expect((await chain.questDetails(2)).paused).to.equal(true);
       const tx = chain.connect(signers[3]).submitProofs([2], ['']);
       await expect(tx).to.be.revertedWith(`QuestChain: quest paused`);
-      expect(await chain.questPaused(2)).to.equal(true);
+      expect((await chain.questDetails(2)).paused).to.equal(true);
     });
   });
 
@@ -1018,6 +1094,177 @@ describe('QuestChain', () => {
           await questChain.questChainId(),
           1,
         );
+    });
+  });
+
+  describe('Tests for skipReview, optional and paused quests', () => {
+    let questChain: QuestChain;
+
+    before('Create QuestCain with three quests', async () => {
+      questChain = await createChain(['1', '2', '3']);
+    });
+
+    it('Should revert to configure non-existed quest', async () => {
+      await expect(
+        questChain.configureQuests(
+          [3],
+          [
+            { paused: false, optional: false, skipReview: true }, // skipReview is true
+          ],
+        ),
+      ).to.be.revertedWith('QuestChain: quest not found');
+    });
+
+    it('Set quests as skipReview, optional and paused, respectively', async () => {
+      const questIdList = [0, 1, 2];
+      const questDetailsList = [
+        { paused: false, optional: false, skipReview: true }, // skipReview is true
+        { paused: false, optional: true, skipReview: false }, // optional is true
+        { paused: true, optional: false, skipReview: false }, // paused is true
+      ];
+
+      const tx = await questChain.configureQuests(
+        questIdList,
+        questDetailsList,
+      );
+      const receipt = await tx.wait();
+
+      expect(
+        receipt.events?.some(event => {
+          if (event.event === 'ConfiguredQuests') {
+            if (
+              event.data ===
+              ethers.utils.defaultAbiCoder.encode(
+                ['address', 'uint256[]', '(bool,bool,bool)[]'],
+                [
+                  owner.address,
+                  questIdList,
+                  questDetailsList.map(questDetails =>
+                    Object.values(questDetails),
+                  ),
+                ],
+              )
+            )
+              return true;
+          }
+        }),
+      ).to.equal(true);
+
+      expect((await questChain.questDetails(0)).paused).to.equal(false);
+      expect((await questChain.questDetails(0)).skipReview).to.equal(true);
+      expect((await questChain.questDetails(0)).optional).to.equal(false);
+
+      expect((await questChain.questDetails(1)).paused).to.equal(false);
+      expect((await questChain.questDetails(1)).skipReview).to.equal(false);
+      expect((await questChain.questDetails(1)).optional).to.equal(true);
+
+      expect((await questChain.questDetails(2)).paused).to.equal(true);
+      expect((await questChain.questDetails(2)).skipReview).to.equal(false);
+      expect((await questChain.questDetails(2)).optional).to.equal(false);
+    });
+
+    it('skipReview quest should automatically pass on submission', async () => {
+      const questIdList = ['0'];
+      const detailsList = [''];
+      const tx = await questChain.submitProofs(questIdList, detailsList);
+      await tx.wait();
+
+      await expect(tx)
+        .to.emit(questChain, 'QuestProofsSubmitted')
+        .withArgs(owner.address, questIdList, detailsList);
+
+      expect(
+        await questChain.questStatus(owner.address, questIdList[0]),
+      ).to.equal(Status.pass);
+    });
+
+    it('should mint NFT with incomplete paused and optional quests', async () => {
+      expect(await questChain.questStatus(owner.address, 1)).to.equal(
+        Status.init,
+      );
+      expect(await questChain.questStatus(owner.address, 2)).to.equal(
+        Status.init,
+      );
+
+      const tx = await questChain.mintToken();
+      await tx.wait();
+
+      const questChainToken = await getContractAt<QuestChainToken>(
+        'QuestChainToken',
+        await questChain.questChainToken(),
+      );
+      await expect(tx)
+        .to.emit(questChainToken, 'TransferSingle')
+        .withArgs(
+          questChain.address,
+          constants.AddressZero,
+          owner.address,
+          await questChain.questChainId(),
+          1,
+        );
+    });
+
+    it('should revert mintToken if no quest is reviewed (if all quests are optional)', async () => {
+      const questIdList = [0, 1, 2];
+      const questDetailsList = [
+        { paused: false, optional: true, skipReview: true }, // skipReview and optional is true
+        { paused: false, optional: true, skipReview: true }, // skipReview and optional is true
+        { paused: false, optional: true, skipReview: true }, // skipReview and optional is true
+      ];
+
+      await (
+        await questChain.configureQuests(questIdList, questDetailsList)
+      ).wait();
+
+      const tx = questChain.connect(signers[1]).mintToken();
+      await expect(tx).to.be.revertedWith('QuestChain: no successful review');
+    });
+
+    it('should mintToken if even one quest is reviewed (if all quests are optional)', async () => {
+      //  Let's say if signer-1 passes one quests
+      const questIdList = [0];
+      const detailsList = [''];
+      await (
+        await questChain
+          .connect(signers[1])
+          .submitProofs(questIdList, detailsList)
+      ).wait();
+
+      const tx = await questChain.connect(signers[1]).mintToken();
+      await tx.wait();
+
+      const questChainToken = await getContractAt<QuestChainToken>(
+        'QuestChainToken',
+        await questChain.questChainToken(),
+      );
+      await expect(tx).to.emit(questChainToken, 'TransferSingle');
+    });
+
+    it('should mintToken if all required quests are reviewed (if all other quests are optional)', async () => {
+      const questIdList = [0];
+      const questDetailsList = [
+        { paused: false, optional: false, skipReview: true }, // skipReview is true
+      ];
+
+      await (
+        await questChain.configureQuests(questIdList, questDetailsList)
+      ).wait();
+
+      const detailsList = [''];
+      await (
+        await questChain
+          .connect(signers[2])
+          .submitProofs(questIdList, detailsList)
+      ).wait();
+
+      const tx = await questChain.connect(signers[2]).mintToken();
+      await tx.wait();
+
+      const questChainToken = await getContractAt<QuestChainToken>(
+        'QuestChainToken',
+        await questChain.questChainToken(),
+      );
+      await expect(tx).to.emit(questChainToken, 'TransferSingle');
     });
   });
 
