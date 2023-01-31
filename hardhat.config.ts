@@ -19,6 +19,13 @@ task('accounts', 'Prints the list of accounts', async (_args, hre) => {
   }
 });
 
+if (!process.env.PRIVATE_KEY) {
+  console.error('invalid env variable: PRIVATE_KEY');
+  process.exit(1);
+}
+
+const accounts = [process.env.PRIVATE_KEY!];
+
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
 
@@ -39,34 +46,27 @@ const config: HardhatUserConfig = {
   networks: {
     goerli: {
       url: `https://goerli.infura.io/v3/${process.env.INFURA_ID}`,
-      accounts:
-        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+      accounts,
     },
-    rinkeby: {
-      url: `https://rinkeby.infura.io/v3/${process.env.INFURA_ID}`,
-      accounts:
-        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-    },
-    xdai: {
+    gnosis: {
       url: `https://rpc.gnosischain.com`,
-      accounts:
-        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-    },
-    sokol: {
-      url: `https://sokol.poa.network`,
-      accounts:
-        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
-      gasPrice: 5000000000,
+      accounts,
     },
     polygon: {
       url: 'https://rpc-mainnet.maticvigil.com',
-      accounts:
-        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+      accounts,
     },
     polygonMumbai: {
       url: 'https://rpc-mumbai.maticvigil.com',
-      accounts:
-        process.env.PRIVATE_KEY !== undefined ? [process.env.PRIVATE_KEY] : [],
+      accounts,
+    },
+    arbitrumOne: {
+      url: 'https://arb1.arbitrum.io/rpc',
+      accounts,
+    },
+    arbitrumGoerli: {
+      url: 'https://goerli-rollup.arbitrum.io/rpc',
+      accounts,
     },
   },
   gasReporter: {
@@ -76,12 +76,12 @@ const config: HardhatUserConfig = {
   etherscan: {
     apiKey: {
       mainnet: process.env.ETHERSCAN_API_KEY!,
-      rinkeby: process.env.ETHERSCAN_API_KEY!,
       goerli: process.env.ETHERSCAN_API_KEY!,
       polygon: process.env.POLYGONSCAN_API_KEY!,
       polygonMumbai: process.env.POLYGONSCAN_API_KEY!,
-      xdai: process.env.BLOCKSCOUT_API_KEY!,
-      sokol: process.env.BLOCKSCOUT_API_KEY!,
+      gnosis: process.env.GNOSISSCAN_API_KEY!,
+      arbitrumOne: process.env.ARBISCAN_API_KEY!,
+      arbitrumGoerli: process.env.ARBISCAN_API_KEY!,
     },
   },
   typechain: {

@@ -46,7 +46,10 @@ describe('QuestChainFactory', () => {
     admin = signers[0].address;
     // admin = signers[1].address;
 
-    mockToken = await deployMockContract(signers[0], IERC20Token__factory.abi);
+    mockToken = await deployMockContract(
+      signers[0],
+      IERC20Token__factory.abi as unknown as any[],
+    );
 
     mockPermitToken = await deploy<MockERC20Token>('MockERC20Token', {});
 

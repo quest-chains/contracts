@@ -137,11 +137,10 @@ library MultiToken {
      * @param _asset Struct defining all necessary context of a token
      * @param _target Target address to be checked
      */
-    function balanceOf(Asset memory _asset, address _target)
-        internal
-        view
-        returns (uint256)
-    {
+    function balanceOf(
+        Asset memory _asset,
+        address _target
+    ) internal view returns (uint256) {
         if (_asset.category == Category.ERC20) {
             IERC20 token = IERC20(_asset.assetAddress);
             return token.balanceOf(_target);
@@ -188,11 +187,10 @@ library MultiToken {
      * @param _otherAsset Second asset to examine
      * @return True if both structs represents the same asset
      */
-    function isSameAs(Asset memory _asset, Asset memory _otherAsset)
-        internal
-        pure
-        returns (bool)
-    {
+    function isSameAs(
+        Asset memory _asset,
+        Asset memory _otherAsset
+    ) internal pure returns (bool) {
         return
             _asset.assetAddress == _otherAsset.assetAddress &&
             _asset.category == _otherAsset.category &&

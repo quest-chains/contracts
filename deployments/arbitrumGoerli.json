@@ -1,0 +1,9 @@
+{
+  "network": "arbitrumGoerli",
+  "version": "c869a45",
+  "factory": "0x7CeCF0a7B6e764d7B8849bD47E1A92c1806B89aC",
+  "token": "0x1984Ec8eFc5A11d3bba5939d2AeA58E0761520c2",
+  "template": "0x37Ceee303E485bc23aa1c21aa91D51C1f0030Dae",
+  "txHash": "0xa4f284d0313863fad5c25cd01dbe8574a0b1470ebcf78123f79cb12a8ff418cf",
+  "blockNumber": "6336532"
+}

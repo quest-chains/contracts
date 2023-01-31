@@ -96,8 +96,8 @@ interface IQuestChain {
 
     function getTokenURI() external view returns (string memory);
 
-    function questStatus(address _quester, uint256 _questId)
-        external
-        view
-        returns (Status);
+    function questStatus(
+        address _quester,
+        uint256 _questId
+    ) external view returns (Status);
 }

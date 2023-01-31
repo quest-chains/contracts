@@ -18,15 +18,9 @@ library QuestChainCommons {
         string tokenURI;
     }
 
-    function recoverParameters(bytes memory _signature)
-        internal
-        pure
-        returns (
-            uint8 v,
-            bytes32 r,
-            bytes32 s
-        )
-    {
+    function recoverParameters(
+        bytes memory _signature
+    ) internal pure returns (uint8 v, bytes32 r, bytes32 s) {
         require(_signature.length == 65, "QuestChainCommons: bad signature");
         // solhint-disable-next-line no-inline-assembly
         assembly {

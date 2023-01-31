@@ -42,7 +42,10 @@ describe('QuestChain', () => {
     signers = await ethers.getSigners();
     owner = signers[0];
 
-    mockToken = await deployMockContract(signers[0], IERC20__factory.abi);
+    mockToken = await deployMockContract(
+      signers[0],
+      IERC20__factory.abi as unknown as any[],
+    );
 
     const questChainImpl = await deploy<QuestChain>('QuestChain', {});
 
@@ -1327,7 +1330,9 @@ describe('QuestChain', () => {
     it('setLimiter: revert when sender is not admin', async () => {
       await expect(
         limiterChain.connect(signers[1]).setLimiter(limiterTokenGated.address),
-      ).to.be.revertedWith('AccessControl: account');
+      ).to.be.revertedWith(
+        `AccessControl: account ${signers[1].address.toLowerCase()} is missing role ${ADMIN_ROLE}`,
+      );
     });
     it('setLimiter: revert when QuestChain is not premium', async () => {
       await expect(
@@ -1439,7 +1444,9 @@ describe('QuestChain', () => {
     it('setLimiter: revert when sender is not admin', async () => {
       await expect(
         limiterChain.connect(signers[1]).setLimiter(limiterTokenFee.address),
-      ).to.be.revertedWith('AccessControl: account');
+      ).to.be.revertedWith(
+        `AccessControl: account ${signers[1].address.toLowerCase()} is missing role ${ADMIN_ROLE}`,
+      );
     });
     it('setLimiter: revert when QuestChain is not premium', async () => {
       await expect(

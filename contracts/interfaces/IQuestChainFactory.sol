@@ -46,10 +46,9 @@ interface IQuestChainFactory {
         bytes calldata _signature
     ) external;
 
-    function getQuestChainAddress(uint256 _index)
-        external
-        view
-        returns (address);
+    function getQuestChainAddress(
+        uint256 _index
+    ) external view returns (address);
 
     function questChainCount() external view returns (uint256);
 

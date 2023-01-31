@@ -90,10 +90,9 @@ contract QuestChain is
         _disableInitializers();
     }
 
-    function init(QuestChainCommons.QuestChainInfo calldata _info)
-        external
-        initializer
-    {
+    function init(
+        QuestChainCommons.QuestChainInfo calldata _info
+    ) external initializer {
         // set factory interface
         questChainFactory = IQuestChainFactory(_msgSender());
         // set token interface
@@ -176,11 +175,9 @@ contract QuestChain is
      * @notice Admin can decide to add a limiter
      * @param _limiterContract address of limiter
      */
-    function setLimiter(address _limiterContract)
-        external
-        onlyRole(ADMIN_ROLE)
-        onlyPremium
-    {
+    function setLimiter(
+        address _limiterContract
+    ) external onlyRole(ADMIN_ROLE) onlyPremium {
         limiterContract = _limiterContract;
         emit SetLimiter(_limiterContract);
     }
@@ -189,10 +186,9 @@ contract QuestChain is
      * @dev Creates quests in quest chain
      * @param _detailsList list of uris of off chain details for new quests
      */
-    function createQuests(string[] calldata _detailsList)
-        external
-        onlyRole(EDITOR_ROLE)
-    {
+    function createQuests(
+        string[] calldata _detailsList
+    ) external onlyRole(EDITOR_ROLE) {
         // update quest counter
         questCount += _detailsList.length;
 
@@ -338,11 +334,9 @@ contract QuestChain is
      * @dev Updates token uri for the quest chain nft
      * @param _tokenURI off chain token uri
      */
-    function setTokenURI(string memory _tokenURI)
-        external
-        onlyRole(ADMIN_ROLE)
-        onlyPremium
-    {
+    function setTokenURI(
+        string memory _tokenURI
+    ) external onlyRole(ADMIN_ROLE) onlyPremium {
         _setTokenURI(_tokenURI);
     }
 
@@ -393,12 +387,10 @@ contract QuestChain is
      * @param _quester address of quester
      * @param _questId identifier of the quest
      */
-    function questStatus(address _quester, uint256 _questId)
-        external
-        view
-        validQuest(_questId)
-        returns (Status status)
-    {
+    function questStatus(
+        address _quester,
+        uint256 _questId
+    ) external view validQuest(_questId) returns (Status status) {
         status = _questStatus[_quester][_questId];
     }
 
@@ -407,11 +399,10 @@ contract QuestChain is
      * @param _role role to be granted
      * @param _account address of the user
      */
-    function grantRole(bytes32 _role, address _account)
-        public
-        override
-        onlyRole(getRoleAdmin(_role))
-    {
+    function grantRole(
+        bytes32 _role,
+        address _account
+    ) public override onlyRole(getRoleAdmin(_role)) {
         _grantRole(_role, _account);
         if (_role == DEFAULT_ADMIN_ROLE) {
             grantRole(ADMIN_ROLE, _account);
@@ -427,11 +418,10 @@ contract QuestChain is
      * @param _role role to be granted
      * @param _account address of the user
      */
-    function revokeRole(bytes32 _role, address _account)
-        public
-        override
-        onlyRole(getRoleAdmin(_role))
-    {
+    function revokeRole(
+        bytes32 _role,
+        address _account
+    ) public override onlyRole(getRoleAdmin(_role)) {
         _revokeRole(_role, _account);
         if (_role == REVIEWER_ROLE) {
             revokeRole(EDITOR_ROLE, _account);

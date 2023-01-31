@@ -64,10 +64,10 @@ contract QuestChainToken is IQuestChainToken, ERC1155 {
      * @param _tokenId the quest NFT identifier
      * @param _questChain the address of the new QuestChain minimal proxy
      */
-    function setTokenOwner(uint256 _tokenId, address _questChain)
-        public
-        onlyFactory
-    {
+    function setTokenOwner(
+        uint256 _tokenId,
+        address _questChain
+    ) public onlyFactory {
         // assign quest chain address as quest token's owner
         _tokenOwners[_tokenId] = _questChain;
     }
@@ -77,10 +77,10 @@ contract QuestChainToken is IQuestChainToken, ERC1155 {
      * @param _tokenId the quest NFT identifier
      * @param _tokenURI the URI pointer for locating token metadata
      */
-    function setTokenURI(uint256 _tokenId, string memory _tokenURI)
-        public
-        onlyTokenOwner(_tokenId)
-    {
+    function setTokenURI(
+        uint256 _tokenId,
+        string memory _tokenURI
+    ) public onlyTokenOwner(_tokenId) {
         // assign metadata pointer to the tokenId
         _tokenURIs[_tokenId] = _tokenURI;
 
@@ -93,10 +93,10 @@ contract QuestChainToken is IQuestChainToken, ERC1155 {
      * @param _user the address of a successful questing user
      * @param _tokenId the quest token identifier
      */
-    function mint(address _user, uint256 _tokenId)
-        public
-        onlyTokenOwner(_tokenId)
-    {
+    function mint(
+        address _user,
+        uint256 _tokenId
+    ) public onlyTokenOwner(_tokenId) {
         // place user balance on the stack
         uint256 userBalance = balanceOf(_user, _tokenId);
 
@@ -112,10 +112,10 @@ contract QuestChainToken is IQuestChainToken, ERC1155 {
      * @param _user the address of a successful questing user
      * @param _tokenId the quest token identifier
      */
-    function burn(address _user, uint256 _tokenId)
-        public
-        onlyTokenOwner(_tokenId)
-    {
+    function burn(
+        address _user,
+        uint256 _tokenId
+    ) public onlyTokenOwner(_tokenId) {
         // place user balance on the stack
         uint256 userBalance = balanceOf(_user, _tokenId);
 
@@ -142,7 +142,9 @@ contract QuestChainToken is IQuestChainToken, ERC1155 {
      * @dev Returns the metadata URI of a particular quest token
      * @param _tokenId the quest token identifier
      */
-    function uri(uint256 _tokenId)
+    function uri(
+        uint256 _tokenId
+    )
         public
         view
         override(IERC1155MetadataURI, ERC1155)
@@ -175,11 +177,7 @@ contract QuestChainToken is IQuestChainToken, ERC1155 {
     /**
      * @dev Prevents approval of the tokens and thus makes them SoulBound
      */
-    function _setApprovalForAll(
-        address,
-        address,
-        bool
-    ) internal pure override {
+    function _setApprovalForAll(address, address, bool) internal pure override {
         revert("QuestChainToken: soulbound");
     }
 }

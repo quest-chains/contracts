@@ -147,7 +147,9 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
      * @dev Proposes a new admin address
      * @param _admin the address of the new admin
      */
-    function proposeAdminReplace(address _admin)
+    function proposeAdminReplace(
+        address _admin
+    )
         external
         onlyAdmin
         nonZeroAddr(_admin)
@@ -186,7 +188,9 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
      * @dev Proposes a new paymentToken address
      * @param _paymentToken the address of the new paymentToken
      */
-    function proposePaymentTokenReplace(address _paymentToken)
+    function proposePaymentTokenReplace(
+        address _paymentToken
+    )
         external
         onlyAdmin
         nonZeroAddr(_paymentToken)
@@ -224,11 +228,9 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
      * @dev Proposes a new upgradeFee
      * @param _upgradeFee the new upgradeFee
      */
-    function proposeUpgradeFeeReplace(uint256 _upgradeFee)
-        external
-        onlyAdmin
-        mustChangeUint(proposedUpgradeFee, _upgradeFee)
-    {
+    function proposeUpgradeFeeReplace(
+        uint256 _upgradeFee
+    ) external onlyAdmin mustChangeUint(proposedUpgradeFee, _upgradeFee) {
         // set proposed upgradeFee
         proposedUpgradeFee = _upgradeFee;
         upgradeFeeProposalTimestamp = block.timestamp;
@@ -311,10 +313,9 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
      * @dev Upgrades an existing quest chain contract
      * @param _questChainAddress the quest chain contract to be upgraded
      */
-    function upgradeQuestChain(address _questChainAddress)
-        external
-        nonReentrant
-    {
+    function upgradeQuestChain(
+        address _questChainAddress
+    ) external nonReentrant {
         // upgrade new quest chain and transfer upgrade fee to treasury
         _upgradeQuestChain(_questChainAddress);
     }
@@ -337,11 +338,9 @@ contract QuestChainFactory is IQuestChainFactory, ReentrancyGuard {
      * @dev Returns the address of a deployed quest chain proxy
      * @param _index the quest chain contract index
      */
-    function getQuestChainAddress(uint256 _index)
-        external
-        view
-        returns (address)
-    {
+    function getQuestChainAddress(
+        uint256 _index
+    ) external view returns (address) {
         return _questChains[_index];
     }
 

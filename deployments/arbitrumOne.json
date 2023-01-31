@@ -1,0 +1,9 @@
+{
+  "network": "arbitrumOne",
+  "version": "c869a45",
+  "factory": "0x0d006D9e862B362180eb602e5973Fd1fdb6f78dd",
+  "token": "0x9Cc7e3e12F242D7934Bb32e1918562664DBb4825",
+  "template": "0x67F4C72a50f8Df6487720261E188F2abE83F57D7",
+  "txHash": "0x5715d573955742052e0b8031df55adc3d169678882d4a68895faae79a5abb74f",
+  "blockNumber": "56847703"
+}

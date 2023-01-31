@@ -1,0 +1,9 @@
+{
+  "network": "gnosis",
+  "version": "c869a45",
+  "factory": "0x7B7A3bD8aD2B09dD016732bCed8CDd56B176F5E2",
+  "token": "0x31a6B12318b8C75C0604E4a14Bab7ba7de801F5b",
+  "template": "0xf589C12C6C3ae8b9a474ffb4da4489c8f91D95e4",
+  "txHash": "0xe7fc0e93454379901b8f9ab80fbd32c4a342c61201d2f137dcc150e5be1224c2",
+  "blockNumber": "26238518"
+}
