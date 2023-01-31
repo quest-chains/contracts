@@ -5,7 +5,6 @@ import { ethers } from 'hardhat';
 export const NETWORK_NAME: Record<number, string> = {
   5: 'Goerli Testnet',
   10: 'Optimism',
-  77: 'POA Sokol Testnet',
   100: 'Gnosis Chain',
   137: 'Polygon Mainnet',
   42161: 'Arbitrum One',
@@ -17,7 +16,6 @@ export const NETWORK_NAME: Record<number, string> = {
 export const NETWORK_CURRENCY: Record<number, string> = {
   5: 'GoerliETH',
   10: 'ETH',
-  77: 'SPOA',
   100: 'xDAI',
   137: 'MATIC',
   42161: 'ETH',
@@ -36,10 +34,9 @@ export type DeploymentInfo = {
 
 export const TREASURY_ADDRESS: Record<string, string> = {
   5: '0xC9F2D9adfa6C24ce0D5a999F2BA3c6b06E36F75E',
-  77: '0xC9F2D9adfa6C24ce0D5a999F2BA3c6b06E36F75E',
+  10: '0xC9F2D9adfa6C24ce0D5a999F2BA3c6b06E36F75E', // todo: replace with gnosis safe when introducing fees
   100: '0xcDba6263aC0a162848380A1eD117B48D973EABFC', // gnosis safe
   137: '0xcDba6263aC0a162848380A1eD117B48D973EABFC', // gnosis safe
-  10: '0xC9F2D9adfa6C24ce0D5a999F2BA3c6b06E36F75E', // todo: replace with gnosis safe when introducing fees
   42161: '0xC9F2D9adfa6C24ce0D5a999F2BA3c6b06E36F75E', // todo: replace with gnosis safe when introducing fees
   421613: '0xC9F2D9adfa6C24ce0D5a999F2BA3c6b06E36F75E',
   80001: '0xC9F2D9adfa6C24ce0D5a999F2BA3c6b06E36F75E',
@@ -48,7 +45,7 @@ export const TREASURY_ADDRESS: Record<string, string> = {
 
 export const PAYMENT_TOKEN: Record<string, string> = {
   5: '0x7f8F6E42C169B294A384F5667c303fd8Eedb3CF3', // custom USDC
-  77: '0xDEbaC18E0F827B815A15F2761b566805998c78C9', // custom USDC
+  10: '0x7f5c764cbc14f9669b88837ca1490cca17c31607', // USDC
   100: '0xDDAfbb505ad214D7b80b1f830fcCc89B60fb7A83', // USDC
   137: '0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174', // USDC
   42161: '0xFF970A61A04b1cA14834A43f5dE4533eBDDB5CC8', // USDC

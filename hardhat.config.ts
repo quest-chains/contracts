@@ -48,6 +48,10 @@ const config: HardhatUserConfig = {
       url: `https://goerli.infura.io/v3/${process.env.INFURA_ID}`,
       accounts,
     },
+    optimism: {
+      url: 'https://mainnet.optimism.io',
+      accounts,
+    },
     gnosis: {
       url: `https://rpc.gnosischain.com`,
       accounts,
@@ -75,8 +79,8 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: {
-      mainnet: process.env.ETHERSCAN_API_KEY!,
       goerli: process.env.ETHERSCAN_API_KEY!,
+      optimisticEthereum: process.env.OPTIMISTIC_ETHERSCAN_API_KEY!,
       polygon: process.env.POLYGONSCAN_API_KEY!,
       polygonMumbai: process.env.POLYGONSCAN_API_KEY!,
       gnosis: process.env.GNOSISSCAN_API_KEY!,
